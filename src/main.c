@@ -17,25 +17,41 @@
  */
 #include <stdlib.h>
 #include <pthread.h>
-
-#include "app.h"
+#include <string.h>
+#include <whisper-core/session_controller.h>
+#include "ui.h"
 
 int main(int argc, char **argv) {
-	init_app();
-	ui_t *ui = create_ui();
+  ui_t *ui = create_ui();
 
-	context_t *context = malloc(sizeof(context_t));
-	context->ui = ui;
-	context->msg = NULL;
-	pthread_t read_thread;
-	pthread_create(&read_thread, 0, read_loop, (void *) context);
+  context_t *context = malloc(sizeof(context_t));
+  context->ui = ui;
+  context->msg = NULL;
 
-	while (TRUE) {
-		if (-1 == output_next_message_in_context(context)) {
-			break;
-		}
-	}
-	
-	destroy_ui(ui);
-	return 0;
+  int should_tick_core = 0;
+
+
+  while(TRUE) {
+    char *message = get_message(ui);
+
+    if(strcmp(message,":q") == 0) {
+      break;
+    }
+    if(strcmp(message,":help") == 0) {
+      display_system_message(ui,"COMMANDS\n :q to quit\n :help for help\n :start to start whisper-core\n :stop to stop whisper-core");
+    }
+
+    if(strcmp(message,":start") == 0) {
+      display_system_message(ui,"STARTING WHISPER_CORE"); 
+    }
+    if(strcmp(message,":stop") == 0) {
+      display_system_message(ui,"STOPPING WHISPER_CORE"); 
+    }
+    if(should_tick_core) {
+    
+    }
+  }
+
+  destroy_ui(ui);
+  return 0;
 }
