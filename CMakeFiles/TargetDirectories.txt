@@ -1,5 +1,0 @@
-/home/jonesax/Work/whisper-shell/CMakeFiles/rebuild_cache.dir
-/home/jonesax/Work/whisper-shell/CMakeFiles/edit_cache.dir
-/home/jonesax/Work/whisper-shell/CMakeFiles/whisper-shell.dir
-/home/jonesax/Work/whisper-shell/src/CMakeFiles/edit_cache.dir
-/home/jonesax/Work/whisper-shell/src/CMakeFiles/rebuild_cache.dir

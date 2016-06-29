@@ -1,1 +1,0 @@
-/usr/bin/cc     CMakeFiles/whisper-shell.dir/src/app.c.o CMakeFiles/whisper-shell.dir/src/ui.c.o CMakeFiles/whisper-shell.dir/src/main.c.o  -o whisper-shell -rdynamic -lwhisper-core -lncurses -lpthread 
