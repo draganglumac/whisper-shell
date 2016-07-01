@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <whisper-core/session_controller.h>
+#include <jnxc_headers/jnx_log.h>
 #include "ui.h"
 static char *baddr = NULL;
 static connection_controller *connectionc;
@@ -37,6 +38,13 @@ void on_new_session_message(const session *s,
 }
 
 int main(int argc, char **argv) {
+
+  FILE* fp;
+  if ((fp = fopen("logtest.conf", "a+")) == NULL) {
+    perror("file: ");
+    return -1;
+  }
+  JNXLOG_OUTPUT_REDIRECT_START(fp);
 
   ui = create_ui();
   context_t *context = malloc(sizeof(context_t));
@@ -90,5 +98,7 @@ int main(int argc, char **argv) {
   }
 
   destroy_ui(ui);
+    JNXLOG_OUTPUT_REDIRECT_END()
+   fclose(fp);
   return 0;
 }

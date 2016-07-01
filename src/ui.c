@@ -45,7 +45,7 @@ void show_prompt(ui_t *ui) {
 }
 void display_logo() {
   attron(COLOR_PAIR(COL_LOGO) | A_BOLD);
-  printw("%s", " Whisper Chat ");
+  printw("%s", " Whisper Shell ");
   attroff(COLOR_PAIR(COL_LOGO) | A_BOLD);
   refresh();
 }
