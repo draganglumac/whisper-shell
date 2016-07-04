@@ -21,6 +21,7 @@
 #include <string.h>
 #include <whisper-core/session_controller.h>
 #include <jnxc_headers/jnx_log.h>
+#include <jnxc_headers/jnx_thread.h>
 #include "ui.h"
 static char *baddr = NULL;
 static connection_controller *connectionc;
@@ -29,6 +30,8 @@ static discovery_service *ds = NULL;
 static char *interface = NULL;
 
 static ui_t *ui = NULL;
+static int log_thread_run = 1;
+
 
 void on_new_session_message(const session *s, 
     const connection_request *c, const jnx_char *message,
@@ -37,15 +40,40 @@ void on_new_session_message(const session *s,
   display_remote_message(ui,(char*)message);
 }
 
+FILE *JNXLOG_OUTPUT_FP = NULL;
+
+void *run_log_thread(void *args) {
+  sleep(2);
+  //delayed start
+  ui_t *ui = (ui_t*)args;
+  FILE *fp;
+  if ((fp = fopen("logtest.conf", "r")) == NULL) {
+    perror("file: ");
+    exit(1);
+  }
+  int current_pos = 0;
+  int end_pos = 0;
+  while(log_thread_run) {
+  
+    current_pos = ftell(fp);
+    end_pos = fseek(fp,0,SEEK_END);
+
+    //TODO:
+  }
+  fclose(fp);
+  return NULL;
+}
 int main(int argc, char **argv) {
+
+  system("rm -rf logtest.conf");
 
   FILE* fp;
   if ((fp = fopen("logtest.conf", "a+")) == NULL) {
     perror("file: ");
     return -1;
   }
+  JNXLOG_OUTPUT_FP = fp;
   JNXLOG_OUTPUT_REDIRECT_START(fp);
-
   ui = create_ui();
   context_t *context = malloc(sizeof(context_t));
   context->ui = ui;
@@ -53,7 +81,12 @@ int main(int argc, char **argv) {
 
   int should_tick_core = 0;
 
+  int current_log_line = 0;
+
+  jnx_thread_create_disposable(run_log_thread,ui);
+
   while(TRUE) {
+
     char *message = get_message(ui);
 
     if(strcmp(message,":q") == 0) {
@@ -85,6 +118,7 @@ int main(int argc, char **argv) {
       should_tick_core = 1;
     }
     if(strcmp(message,":stop") == 0) {
+      log_thread_run = 0;
       display_system_message(ui,"STOPPING WHISPER_CORE"); 
       session_controller_destroy(&sc);
       connection_controller_destroy(&connectionc);
@@ -98,7 +132,7 @@ int main(int argc, char **argv) {
   }
 
   destroy_ui(ui);
-    JNXLOG_OUTPUT_REDIRECT_END()
-   fclose(fp);
+  JNXLOG_OUTPUT_REDIRECT_END()
+    fclose(fp);
   return 0;
 }
