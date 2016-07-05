@@ -1,3 +1,0 @@
-[submodule "whisper-core"]
-	path = whisper-core
-	url = https://github.com/AlexsJones/whisper-core.git
