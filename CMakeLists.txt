@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 set(INSTALL_PREFIX /usr)
 project(whisper-shell)
-
+execute_process(COMMAND cmake . WORKING_DIRECTORY jnxlibc)
+execute_process(COMMAND make . WORKING_DIRECTORY jnxlibc)
+execute_process(COMMAND sudo make install . WORKING_DIRECTORY jnxlibc)
 execute_process(COMMAND git submodule init)
 execute_process(COMMAND git submodule update)
 execute_process(COMMAND cmake . WORKING_DIRECTORY whisper-core)
