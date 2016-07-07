@@ -25,6 +25,8 @@
 #define COL_LOCAL  2
 #define COL_REMOTE 3
 #define COL_SYS    4
+static char status_buffer[1024];
+static char *pb = status_buffer;
 void init_colours() {
   if (has_colors() == FALSE) {
     endwin();
@@ -104,6 +106,31 @@ void display_message(ui_t *ui, char *msg, int col_flag) {
   wmove(ui->prompt, row, col);
   wrefresh(ui->prompt);
 }
+void display_status_message(ui_t *ui, char *msg, int col_flag) {
+  int row, col;
+  getyx(ui->prompt, row, col);
+  char *pm = msg;
+  while (*pm != '\0') {
+    if (*pm == '\n') {
+      *pb = '\0';
+      wattron(ui->screen, COLOR_PAIR(col_flag));
+      mvwprintw(ui->screen, ui->next_line, 1, "%s\n", status_buffer);
+      update_next_line(ui);
+      wattroff(ui->screen, COLOR_PAIR(col_flag));
+      box(ui->screen, 0, 0);
+      wrefresh(ui->screen);
+      pb = status_buffer;
+      ++pm;
+    }
+    else {
+      *pb = *pm;
+      ++pm;
+      ++pb;
+    }
+  }
+  wmove(ui->prompt, row, col);
+  wrefresh(ui->prompt);
+}
 void display_local_message(ui_t *ui, char *msg) {
   display_message(ui, msg, COL_LOCAL);
   free(msg);
@@ -113,5 +140,6 @@ void display_remote_message(ui_t *ui, char *msg) {
   free(msg);
 }
 void display_system_message(ui_t *ui, char *msg) {
-  display_message(ui, msg , COL_SYS);
+  display_message(ui, msg, COL_SYS);
+//  display_status_message(ui, msg , COL_SYS);
 }

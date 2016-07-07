@@ -22,7 +22,7 @@
 #include <whisper-core/session_controller.h>
 #include <jnxc_headers/jnx_log.h>
 #include <jnxc_headers/jnx_thread.h>
-#include <poll.h>
+#include <time.h>
 #include "ui.h"
 static char *baddr = NULL;
 static connection_controller *connectionc;
@@ -33,7 +33,6 @@ static char *interface = NULL;
 static ui_t *ui = NULL;
 static int log_thread_run = 1;
 
-#define MAX_BUFFER 1024
 
 void on_new_session_message(const session *s, 
     const connection_request *c, const jnx_char *message,
@@ -44,14 +43,46 @@ void on_new_session_message(const session *s,
 
 FILE *JNXLOG_OUTPUT_FP = NULL;
 
-void read_logfile(FILE* fp, char *buffer, ssize_t offset) {
-  ssize_t readbytes = read(fileno(fp), (void*)buffer, offset);
-  buffer[readbytes] = '\0';
+void *run_log_thread(void *args) {
+  sleep(2);
+  //delayed start
+  ui_t *ui = (ui_t*)args;
+  FILE *fp;
+  if ((fp = fopen("logtest.conf", "r")) == NULL) {
+    perror("file: ");
+    exit(1);
+  }
+
+  struct timespec interval;
+  interval.tv_sec = 0;
+  interval.tv_nsec = 10L * 1000 * 1000;
+  int current_pos = 0;
+  int end_pos = 0;
+  int offset = 0;
+  while(log_thread_run) {
+
+    current_pos = ftell(fp);
+    end_pos = fseek(fp,0,SEEK_END);
+    offset = end_pos - current_pos;
+    if (offset > 0) {
+      char *message = malloc(offset + 1);
+      int bytesread = read(fileno(fp), (void*)message, offset);
+      message[bytesread+1] = '\0';
+      display_system_message(ui, message);
+      free(message);
+    }    
+    nanosleep(&interval, NULL);
+
+  }
+  fclose(fp);
+  return NULL;
 }
 int main(int argc, char **argv) {
 
+  system("rm -rf logtest.conf");
+
   FILE* fp;
-  if ((fp = fopen("logtest.conf", "w")) == NULL) {
+  if ((fp = fopen("logtest.conf", "a+")) == NULL) {
     perror("file: ");
     return -1;
   }
@@ -66,6 +97,7 @@ int main(int argc, char **argv) {
 
   int current_log_line = 0;
 
+  jnx_thread_create_disposable(run_log_thread,ui);
 
   while(TRUE) {
 

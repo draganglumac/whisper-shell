@@ -1,18 +1,13 @@
 git clone https://github.com/AlexsJones/jnxlibc.git
 pushd jnxlibc
-cmake .
+cmake . -DIGNORE_VERSION=1
 make
-sudo make install >> /dev/null 2>&1
-popd
-git clone https://github.com/AlexsJones/whisper-protocol.git
-pushd whisper-protocol
-cmake .
-make
-sudo make install >> /dev/null 2>&1
+sudo make install
 popd
 git clone https://github.com/AlexsJones/whisper-core.git
 pushd whisper-core
+./fetch_deps
 cmake .
 make
-sudo make install >> /dev/null 2>&1
+sudo make install
 popd
