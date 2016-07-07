@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
     return -1;
   }
   JNXLOG_OUTPUT_FP = fp;
-  JNXLOG_OUTPUT_REDIRECT_START(fp);
+  jnx_log_set_output(fp);
   ui = create_ui();
   context_t *context = malloc(sizeof(context_t));
   context->ui = ui;
@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
   }
 
   destroy_ui(ui);
-  JNXLOG_OUTPUT_REDIRECT_END();
+  jnx_log_set_output(NULL);
   fclose(fp);
   return 0;
 }
