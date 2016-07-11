@@ -3,15 +3,6 @@ include(ExternalProject)
 set(INSTALL_PREFIX /usr)
 project(whisper-shell)
 
-set(whisper_core_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/whisper-core")
-set(whisper_core_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/whisper-core")
-set(whisper_core_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${whisper_core_INSTALL_DIR})
-
-# Add jnxlibc ------------------------------------------------------------------
-set(jnxlibc_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/jnxlibc")
-set(jnxlibc_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/jnxlibc_install_files")
-set(jnxlibc_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${jnxlibc_INSTALL_DIR} -DIGNORE_VERSION=1)
-
 # ------------------------------------------------------------------------------
 # Add whisper-core -------------------------------------------------------------
 set(whisper-core_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/whisper-core")
@@ -31,4 +22,7 @@ ExternalProject_Add(whisper-core-project
 add_subdirectory(src)
 include_directories(${PROJECT_INC_DIR}src)
 add_executable(whisper-shell ${SOURCE})
+
+add_dependencies(whisper-shell whisper-core-project)
+
 target_link_libraries(whisper-shell whisper-core -lncurses -lpthread -ljnxc)
