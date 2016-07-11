@@ -68,6 +68,8 @@ void *run_log_thread(void *args) {
       char *message = malloc(offset + 1);
       int bytesread = read(fileno(fp), (void*)message, offset);
       message[bytesread+1] = '\0';
+
+      printf("Bytes read %d and message %s\n",bytesread,message);
       display_system_message(ui, message);
       free(message);
     }    

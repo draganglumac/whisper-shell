@@ -1,19 +1,34 @@
 cmake_minimum_required(VERSION 2.8)
+include(ExternalProject)
 set(INSTALL_PREFIX /usr)
 project(whisper-shell)
 
-execute_process(COMMAND git submodule init)
-execute_process(COMMAND git submodule update)
+set(whisper_core_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/whisper-core")
+set(whisper_core_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/whisper-core")
+set(whisper_core_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${whisper_core_INSTALL_DIR})
 
-execute_process(COMMAND cmake . -DIGNORE_VERSION=1 WORKING_DIRECTORY jnxlibc)
-execute_process(COMMAND make . WORKING_DIRECTORY jnxlibc)
-execute_process(COMMAND sudo make install . WORKING_DIRECTORY jnxlibc)
+# Add jnxlibc ------------------------------------------------------------------
+set(jnxlibc_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/jnxlibc")
+set(jnxlibc_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/jnxlibc_install_files")
+set(jnxlibc_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${jnxlibc_INSTALL_DIR} -DIGNORE_VERSION=1)
 
-execute_process(COMMAND cmake . WORKING_DIRECTORY whisper_core)
-execute_process(COMMAND make . WORKING_DIRECTORY whisper_core)
-execute_process(COMMAND sudo make install . WORKING_DIRECTORY whisper_core)
+# ------------------------------------------------------------------------------
+# Add whisper-core -------------------------------------------------------------
+set(whisper-core_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/whisper-core")
+set(whisper-core_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/whisper-core")
+set(whisper-core_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${whisper-protocol_INSTALL_DIR})
 
+ExternalProject_Add(whisper-core-project
+  PREFIX ${whisper_core_PREFIX}
+  GIT_REPOSITORY https://github.com/AlexsJones/whisper-core.git
+  INSTALL_DIR ${whisper_core_INSTALL_DIR}
+  CMAKE_ARGS ${whisper_core_CMAKE_ARGS}
+  BUILD_COMMAND sudo make
+  INSTALL_COMMAND sudo make install
+  )
+
+# ------------------------------------------------------------------------------
 add_subdirectory(src)
 include_directories(${PROJECT_INC_DIR}src)
 add_executable(whisper-shell ${SOURCE})
-target_link_libraries(whisper-shell -lwhisper-core -lncurses -lpthread -ljnxc)
+target_link_libraries(whisper-shell whisper-core -lncurses -lpthread -ljnxc)

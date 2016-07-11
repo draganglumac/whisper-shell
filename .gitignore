@@ -1,4 +1,6 @@
-whisper-protocol
+jnxlibc*
+whisper-core*
+whisper-protocol*
 CMakeFiles
 CMakeCache.txt
 *.cmake
