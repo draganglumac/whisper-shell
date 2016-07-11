@@ -10,10 +10,10 @@ set(whisper-core_INSTALL_DIR "/usr")
 set(whisper-core_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${whisper-protocol_INSTALL_DIR})
 
 ExternalProject_Add(whisper-core-project
-  PREFIX ${whisper_core_PREFIX}
+  PREFIX ${whisper-core_PREFIX}
   GIT_REPOSITORY https://github.com/AlexsJones/whisper-core.git
-  INSTALL_DIR ${whisper_core_INSTALL_DIR}
-  CMAKE_ARGS ${whisper_core_CMAKE_ARGS}
+  INSTALL_DIR ${whisper-core_INSTALL_DIR}
+  CMAKE_ARGS ${whisper-core_CMAKE_ARGS}
   BUILD_COMMAND sudo make
   INSTALL_COMMAND sudo make install
   )
