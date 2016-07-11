@@ -48,10 +48,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/jonesax/Work/whisper-shell
+CMAKE_SOURCE_DIR = /home/jonesax/Work/tmp
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/jonesax/Work/whisper-shell
+CMAKE_BINARY_DIR = /home/jonesax/Work/tmp
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -124,14 +124,14 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/jonesax/Work/whisper-shell && $(CMAKE_COMMAND) -E cmake_progress_start /home/jonesax/Work/whisper-shell/CMakeFiles /home/jonesax/Work/whisper-shell/src/CMakeFiles/progress.marks
-	cd /home/jonesax/Work/whisper-shell && $(MAKE) -f CMakeFiles/Makefile2 src/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jonesax/Work/whisper-shell/CMakeFiles 0
+	cd /home/jonesax/Work/tmp && $(CMAKE_COMMAND) -E cmake_progress_start /home/jonesax/Work/tmp/CMakeFiles /home/jonesax/Work/tmp/src/CMakeFiles/progress.marks
+	cd /home/jonesax/Work/tmp && $(MAKE) -f CMakeFiles/Makefile2 src/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jonesax/Work/tmp/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/jonesax/Work/whisper-shell && $(MAKE) -f CMakeFiles/Makefile2 src/clean
+	cd /home/jonesax/Work/tmp && $(MAKE) -f CMakeFiles/Makefile2 src/clean
 .PHONY : clean
 
 # The main clean target
@@ -141,17 +141,17 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/jonesax/Work/whisper-shell && $(MAKE) -f CMakeFiles/Makefile2 src/preinstall
+	cd /home/jonesax/Work/tmp && $(MAKE) -f CMakeFiles/Makefile2 src/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/jonesax/Work/whisper-shell && $(MAKE) -f CMakeFiles/Makefile2 src/preinstall
+	cd /home/jonesax/Work/tmp && $(MAKE) -f CMakeFiles/Makefile2 src/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/jonesax/Work/whisper-shell && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/jonesax/Work/tmp && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Help Target
@@ -177,6 +177,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/jonesax/Work/whisper-shell && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/jonesax/Work/tmp && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

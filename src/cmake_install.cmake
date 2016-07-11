@@ -1,4 +1,4 @@
-# Install script for directory: /home/jonesax/Work/whisper-shell/src
+# Install script for directory: /home/jonesax/Work/tmp/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
