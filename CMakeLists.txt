@@ -12,15 +12,23 @@ set(whisper-core_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${whisper-core_INSTALL_DIR})
 ExternalProject_Add(whisper-core-project
   PREFIX ${whisper-core_PREFIX}
   GIT_REPOSITORY https://github.com/AlexsJones/whisper-core.git
-  INSTALL_DIR ${whisper-core_INSTALL_DIR}
   CMAKE_ARGS ${whisper-core_CMAKE_ARGS}
-  BUILD_COMMAND sudo make
-  INSTALL_COMMAND ""
+  BUILD_COMMAND make
+  INSTALL_COMMAND sudo make install
   )
 
 # ------------------------------------------------------------------------------
+
+add_library(whisper-core SHARED IMPORTED)
+add_library(whisper-cores STATIC IMPORTED)
+
+set_property(TARGET whisper-core PROPERTY IMPORTED_LOCATION ${whisper-core_INSTALL_DIR}/lib/libwhisper-core.so)
+set_property(TARGET whisper-cores PROPERTY IMPORTED_LOCATION ${whisper-core_INSTALL_DIR}/lib/libwhisper-core-static.a)
+
+
 add_subdirectory(src)
-include_directories(${PROJECT_INC_DIR}src)
+include_directories(${PROJECT_INC_DIR}/src)
 add_executable(whisper-shell ${SOURCE})
+add_dependencies(whisper-shell whisper-core-project)
 target_link_libraries(whisper-shell whisper-core -lncurses -lpthread -ljnxc)
 install(TARGETS whisper-shell DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
