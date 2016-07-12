@@ -15,7 +15,8 @@
  *
  * =====================================================================================
  */
-
+#define _GNU_SOURCE 
+#include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -23,6 +24,7 @@
 #include <string.h>
 #include <whisper-core/session_controller.h>
 #include <jnxc_headers/jnx_log.h>
+#include <jnxc_headers/jnx_term.h>
 #include <jnxc_headers/jnx_thread.h>
 #include <time.h>
 #include "ui.h"
@@ -31,10 +33,49 @@ static connection_controller *connectionc;
 static session_controller *sc;
 static discovery_service *ds = NULL;
 static char *interface = NULL;
-
+static peerstore *store = NULL;
 static ui_t *ui = NULL;
 static int log_thread_run = 1;
 
+static void pretty_print_peer(peer *p) {
+  char *guid;
+  jnx_guid_to_string(&p->guid, &guid);
+  size_t needed = snprintf(NULL,0,"\n%-32s %-16s %s\n", guid, p->host_address, p->user_name);
+  char  *buffer = malloc(needed);
+  snprintf(buffer,needed,"\n%-32s %-16s %s\n", guid, p->host_address, p->user_name);
+  display_system_message(ui,buffer);
+  free(buffer);
+  free(guid);
+}
+static void pretty_print_peer_in_col(peer *p, jnx_int32 colour) {
+  char *guid;
+  jnx_guid_to_string(&p->guid, &guid);
+  jnx_term_printf_in_color(colour,
+      "%-32s %-16s %s\n", guid, p->host_address, p->user_name);
+  free(guid);
+}
+
+static void show_active_peers(peerstore *ps) {
+  jnx_guid **active_guids;
+  if(!ps) {
+    display_system_message(ui,"Peerstore not initialised - start whisper core\n");
+    return;
+  }
+  int num_guids = peerstore_get_active_guids(ps, &active_guids);
+  int i;
+  if(num_guids == 0) {
+    display_system_message(ui,"No peers found\n");
+    return;
+  }
+  peer *local = peerstore_get_local_peer(ps);
+  for (i = 0; i < num_guids; i++) {
+    jnx_guid *next_guid = active_guids[i];
+    peer *p = peerstore_lookup(ps, next_guid);
+    if (peers_compare(p, local) != 0) {
+      pretty_print_peer(p);
+    }
+  }
+}
 
 void on_new_session_message(const session *s, 
     const connection_request *c, const jnx_char *message,
@@ -69,7 +110,7 @@ void *run_log_thread(void *args) {
       message[bytesread+1] = '\0';
       last_read_pos += bytesread;
       display_system_message(ui, message);
-//      free(message);
+      //      free(message);
     }
     nanosleep(&interval, NULL);
   }
@@ -110,9 +151,13 @@ int main(int argc, char **argv) {
       break;
     }
     if(strcmp(message,":help") == 0) {
-      display_system_message(ui,"COMMANDS\n :q to quit\n :help for help\n :start to start whisper-core\n :stop to stop whisper-core");
+      display_system_message(ui,"COMMANDS\n :q to quit\n :help for help\n :start to start whisper-core\n :peers to list peers\n :stop to stop whisper-core");
     }
 
+    if(strcmp(message,":peers") == 0) {
+
+      show_active_peers(store);
+    }
     if(strcmp(message,":start") == 0) {
       display_system_message(ui,"STARTING WHISPER_CORE"); 
 
@@ -120,7 +165,7 @@ int main(int argc, char **argv) {
       if(!username) {
         username = "local";
       }
-      peerstore *store = peerstore_init(local_peer_for_user(username,
+      store = peerstore_init(local_peer_for_user(username,
             10,interface), 0);
 
       get_broadcast_ip(&baddr,interface);
