@@ -37,12 +37,30 @@ static peerstore *store = NULL;
 static ui_t *ui = NULL;
 static int log_thread_run = 1;
 
-static void pretty_print_peer(peer *p) {
+static int app_is_input_guid_size(char *input) {
+  if ((strlen(input) / 2) == 16) {
+      return 1;
+    }
+  return 0;
+}
+peer *app_peer_from_input(char *param) {
+  if (app_is_input_guid_size(param)) {
+      jnx_guid g;
+      jnx_guid_from_string(param, &g);
+      peer *p = peerstore_lookup(store, &g);
+      return p;
+    } else {
+        peer *p = peerstore_lookup_by_username(store, param);
+        return p;
+      }
+  return NULL;
+}
+static void pretty_print_peer(int i, peer *p) {
   char *guid;
   jnx_guid_to_string(&p->guid, &guid);
-  size_t needed = snprintf(NULL,0,"\n%-32s %-16s %s\n", guid, p->host_address, p->user_name);
+  size_t needed = snprintf(NULL,0,"\n(%d) %-32s %-16s %s\n", i, guid, p->host_address, p->user_name);
   char  *buffer = malloc(needed);
-  snprintf(buffer,needed,"\n%-32s %-16s %s\n", guid, p->host_address, p->user_name);
+  snprintf(buffer,needed,"\n(%d) %-32s %-16s %s\n", i, guid, p->host_address, p->user_name);
   display_system_message(ui,buffer);
   free(buffer);
   free(guid);
@@ -57,14 +75,15 @@ static void pretty_print_peer_in_col(peer *p, jnx_int32 colour) {
 
 static void show_active_peers(peerstore *ps) {
   jnx_guid **active_guids;
+  display_system_message(ui,"\nPeers:\n");
   if(!ps) {
-    display_system_message(ui,"Peerstore not initialised - start whisper core\n");
+    display_system_message(ui,"\nPeerstore not initialised - start whisper core\n");
     return;
   }
   int num_guids = peerstore_get_active_guids(ps, &active_guids);
   int i;
   if(num_guids == 0) {
-    display_system_message(ui,"No peers found\n");
+    display_system_message(ui,"\nNo peers found\n");
     return;
   }
   peer *local = peerstore_get_local_peer(ps);
@@ -72,7 +91,7 @@ static void show_active_peers(peerstore *ps) {
     jnx_guid *next_guid = active_guids[i];
     peer *p = peerstore_lookup(ps, next_guid);
     if (peers_compare(p, local) != 0) {
-      pretty_print_peer(p);
+      pretty_print_peer(i,p);
     }
   }
 }
@@ -151,15 +170,33 @@ int main(int argc, char **argv) {
       break;
     }
     if(strcmp(message,":help") == 0) {
-      display_system_message(ui,"COMMANDS\n :q to quit\n :help for help\n :start to start whisper-core\n :peers to list peers\n :stop to stop whisper-core");
+      display_system_message(ui,"\nCOMMANDS\n :q to quit\n :help for help\n :start to start whisper-core\n :peers to list peers\n :stop to stop whisper-core\n");
     }
+    if(strcmp(message,":connect") == 0) {
+      display_system_message(ui,"\n Name of user to connect to:\n");
+      message = get_message(ui);
 
+      peer *p = app_peer_from_input(message);
+      if(!p) {
+        display_system_message(ui,"\nPeer not found\n");
+        continue;
+      }else {
+        display_system_message(ui,"\nConnecting...\n");
+
+        session *ses = session_controller_session_create(sc,p);
+
+        while(!session_controller_is_session_ready(sc,ses)) {
+          connection_controller_tick(connectionc);
+          sleep(1.0);
+        }
+      }
+    }
     if(strcmp(message,":peers") == 0) {
 
       show_active_peers(store);
     }
     if(strcmp(message,":start") == 0) {
-      display_system_message(ui,"STARTING WHISPER_CORE"); 
+      display_system_message(ui,"STARTING WHISPER_CORE\n"); 
 
       char *username = getenv("USER");
       if(!username) {
@@ -181,7 +218,7 @@ int main(int argc, char **argv) {
     }
     if(strcmp(message,":stop") == 0) {
       log_thread_run = 0;
-      display_system_message(ui,"STOPPING WHISPER_CORE"); 
+      display_system_message(ui,"STOPPING WHISPER_CORE\n"); 
       session_controller_destroy(&sc);
       connection_controller_destroy(&connectionc);
       should_tick_core = 0;
