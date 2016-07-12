@@ -140,6 +140,5 @@ void display_remote_message(ui_t *ui, char *msg) {
   free(msg);
 }
 void display_system_message(ui_t *ui, char *msg) {
-  display_message(ui, msg, COL_SYS);
-//  display_status_message(ui, msg , COL_SYS);
+  display_status_message(ui, msg , COL_SYS);
 }
