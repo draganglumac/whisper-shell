@@ -39,20 +39,20 @@ static int log_thread_run = 1;
 
 static int app_is_input_guid_size(char *input) {
   if ((strlen(input) / 2) == 16) {
-      return 1;
-    }
+    return 1;
+  }
   return 0;
 }
 peer *app_peer_from_input(char *param) {
   if (app_is_input_guid_size(param)) {
-      jnx_guid g;
-      jnx_guid_from_string(param, &g);
-      peer *p = peerstore_lookup(store, &g);
-      return p;
-    } else {
-        peer *p = peerstore_lookup_by_username(store, param);
-        return p;
-      }
+    jnx_guid g;
+    jnx_guid_from_string(param, &g);
+    peer *p = peerstore_lookup(store, &g);
+    return p;
+  } else {
+    peer *p = peerstore_lookup_by_username(store, param);
+    return p;
+  }
   return NULL;
 }
 static void pretty_print_peer(int i, peer *p) {
@@ -75,14 +75,13 @@ static void pretty_print_peer_in_col(peer *p, jnx_int32 colour) {
 
 static void show_active_peers(peerstore *ps) {
   jnx_guid **active_guids;
-  display_system_message(ui,"\nPeers:\n");
   if(!ps) {
     display_system_message(ui,"\nPeerstore not initialised - start whisper core\n");
     return;
   }
   int num_guids = peerstore_get_active_guids(ps, &active_guids);
   int i;
-  if(num_guids == 0) {
+  if(num_guids == 1) {
     display_system_message(ui,"\nNo peers found\n");
     return;
   }
@@ -137,6 +136,13 @@ void *run_log_thread(void *args) {
   return NULL;
 }
 int main(int argc, char **argv) {
+  if (argc > 1) {
+    interface = argv[1];
+  }else {
+    printf("Please provide interface name as first arg e.g.\
+        ./whisper-shell en0\n");
+    exit(0);
+  }
 
   system("rm -rf logtest.conf");
 
@@ -149,6 +155,7 @@ int main(int argc, char **argv) {
     perror("setbuf: ");
     return -1;
   }
+  //Starting ui ----------------------------------------------------------------
   JNXLOG_OUTPUT_FP = fp;
   jnx_log_set_output(fp);
   ui = create_ui();
@@ -156,21 +163,37 @@ int main(int argc, char **argv) {
   context->ui = ui;
   context->msg = NULL;
 
-  int should_tick_core = 0;
-
   int current_log_line = 0;
 
   jnx_thread_create_disposable(run_log_thread,ui);
+  //Start whisper core ---------------------------------------------------------
+  display_system_message(ui,"STARTING WHISPER_CORE\n"); 
+
+  char *username = getenv("USER");
+  if(!username) {
+    username = "local";
+  }
+  store = peerstore_init(local_peer_for_user(username,
+        10,interface), 0);
+
+  get_broadcast_ip(&baddr,interface);
+
+  ds = discovery_service_create(1234,AF_INET,baddr,store);
+
+  discovery_service_start(ds,BROADCAST_UPDATE_STRATEGY);
+
+  connectionc = connection_controller_create("8080",
+      AF_INET, ds,NULL,NULL,NULL,NULL);
+
+  sc = session_controller_create(connectionc,on_new_session_message);
+  //----------------------------------------------------------------------------
 
   while(TRUE) {
 
     char *message = get_message(ui);
 
-    if(strcmp(message,":q") == 0) {
-      break;
-    }
     if(strcmp(message,":help") == 0) {
-      display_system_message(ui,"\nCOMMANDS\n :q to quit\n :help for help\n :start to start whisper-core\n :peers to list peers\n :stop to stop whisper-core\n");
+      display_system_message(ui,"\nCOMMANDS\n :quit to quit\n :help for help\n :peers to list peers\n");
     }
     if(strcmp(message,":connect") == 0) {
       display_system_message(ui,"\n Name of user to connect to:\n");
@@ -182,56 +205,33 @@ int main(int argc, char **argv) {
         continue;
       }else {
         display_system_message(ui,"\nConnecting...\n");
-
+        //----------------------------------------------------------------------
         session *ses = session_controller_session_create(sc,p);
-
-        while(!session_controller_is_session_ready(sc,ses)) {
-          connection_controller_tick(connectionc);
-          sleep(1.0);
-        }
+        //----------------------------------------------------------------------
+        jnx_char *session_id;
+        jnx_guid_to_string(&(*ses).id,&session_id);
+        char buffer[256] = {};
+        sprintf(buffer,"Created session %s\n", session_id);
+        display_system_message(ui,buffer);
+        free(session_id);
       }
     }
     if(strcmp(message,":peers") == 0) {
-
       show_active_peers(store);
     }
-    if(strcmp(message,":start") == 0) {
-      display_system_message(ui,"STARTING WHISPER_CORE\n"); 
-
-      char *username = getenv("USER");
-      if(!username) {
-        username = "local";
-      }
-      store = peerstore_init(local_peer_for_user(username,
-            10,interface), 0);
-
-      get_broadcast_ip(&baddr,interface);
-      ds = discovery_service_create(1234,AF_INET,baddr,store);
-      discovery_service_start(ds,BROADCAST_UPDATE_STRATEGY);
-
-      connectionc = connection_controller_create("8080",
-          AF_INET, ds,NULL,NULL,NULL,NULL);
-
-      sc = session_controller_create(connectionc,on_new_session_message);
-
-      should_tick_core = 1;
-    }
-    if(strcmp(message,":stop") == 0) {
+    if(strcmp(message,":quit") == 0) {
       log_thread_run = 0;
       display_system_message(ui,"STOPPING WHISPER_CORE\n"); 
-      session_controller_destroy(&sc);
-      connection_controller_destroy(&connectionc);
-      should_tick_core = 0;
+      break;
     }
-    if(should_tick_core) {
-      if(connectionc) {
-        connection_controller_tick(connectionc);
-      }
-    }
+    connection_controller_tick(connectionc);
   }
 
+  session_controller_destroy(&sc);
+  connection_controller_destroy(&connectionc);
   destroy_ui(ui);
   jnx_log_set_output(NULL);
   fclose(fp);
+  exit(0);
   return 0;
 }
