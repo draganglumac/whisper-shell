@@ -1,3 +1,4 @@
+*.conf
 cmake_install*
 jnxlibc*
 whisper-core*
