@@ -72,7 +72,48 @@ static void pretty_print_peer_in_col(peer *p, jnx_int32 colour) {
       "%-32s %-16s %s\n", guid, p->host_address, p->user_name);
   free(guid);
 }
+static void show_sessions() {
+  if(!sc) {
+    display_system_message(ui,"Session manager not initialised - start whisper core\n");
+    return;
+  }
 
+  jnx_node *lh = sc->session_list->head;
+  int c = 0;
+  if(!lh) {
+    display_system_message(ui,"No sessions found\n");
+    return;
+  }
+  while(lh) {
+    session *s = lh->_data;
+    jnx_char *sstr;
+    jnx_guid_to_string(&(*s).id,&sstr);
+    
+    char buffer[256];
+    sprintf(buffer,"(%d) %s\n:",c,sstr);
+    display_system_message(ui,buffer);
+    free(sstr);
+    
+    jnx_node *ch = s->connection_request_list->head;
+
+    while(ch) {
+      
+      connection_request *cr = ch->_data;
+      jnx_char *dstr;
+      jnx_guid_to_string(&(*cr).id,&dstr);
+      char buf[256];
+      sprintf(buf,"-- %s\n",dstr);
+
+      free(dstr);
+
+      ch = ch->next_node;
+    }
+    
+    ++c;
+    lh = lh->next_node;
+  }
+
+}
 static void show_active_peers(peerstore *ps) {
   jnx_guid **active_guids;
   if(!ps) {
@@ -128,7 +169,7 @@ void *run_log_thread(void *args) {
       message[bytesread+1] = '\0';
       last_read_pos += bytesread;
       display_system_message(ui, message);
-      //      free(message);
+      free(message);
     }
     nanosleep(&interval, NULL);
   }
@@ -193,7 +234,9 @@ int main(int argc, char **argv) {
     char *message = get_message(ui);
 
     if(strcmp(message,":help") == 0) {
-      display_system_message(ui,"\nCOMMANDS\n :quit to quit\n :help for help\n :peers to list peers\n");
+      display_system_message(ui,
+          "COMMANDS\n:quit to quit\n:peers to list peers \
+          \n:connect allows you to select a user to connect to\n");
     }
     if(strcmp(message,":connect") == 0) {
       display_system_message(ui,"\n Name of user to connect to:\n");
@@ -219,11 +262,16 @@ int main(int argc, char **argv) {
     if(strcmp(message,":peers") == 0) {
       show_active_peers(store);
     }
+    if(strcmp(message,":sessions") == 0) {
+      show_sessions(); 
+    }
     if(strcmp(message,":quit") == 0) {
       log_thread_run = 0;
       display_system_message(ui,"STOPPING WHISPER_CORE\n"); 
       break;
     }
+    //The problem here is the connection tick is blocked whilst the UI waits for
+    //input
     connection_controller_tick(connectionc);
   }
 
