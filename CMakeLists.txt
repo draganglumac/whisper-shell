@@ -7,7 +7,7 @@ project(whisper-shell)
 # Add whisper-core -------------------------------------------------------------
 set(whisper-core_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/whisper-core")
 set(whisper-core_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
-set(whisper-core_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${whisper-core_INSTALL_DIR})
+set(whisper-core_CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${whisper-core_INSTALL_DIR} -DCMAKE_BUILD_TYPE=DEBUG)
 
 ExternalProject_Add(whisper-core-project
   PREFIX ${whisper-core_PREFIX}

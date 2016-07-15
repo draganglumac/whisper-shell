@@ -188,15 +188,15 @@ void* gui_loop(void*args) {
           \n:connect allows you to select a user to connect to\n");
     }
     if(strcmp(message,":connect") == 0) {
-      display_system_message(ui,"\n Name of user to connect to:\n");
+      display_system_message(ui,"Name of user to connect to:\n");
       message = get_message(ui);
 
       peer *p = app_peer_from_input(message);
       if(!p) {
-        display_system_message(ui,"\nPeer not found\n");
+        display_system_message(ui,"Peer not found\n");
         continue;
       }else {
-        display_system_message(ui,"\nConnecting...\n");
+        display_system_message(ui,"Connecting...\n");
         //----------------------------------------------------------------------
         session *ses = session_controller_session_create(sc,p);
         //----------------------------------------------------------------------
@@ -289,7 +289,7 @@ int main(int argc, char **argv) {
     if(connectionc){
       connection_controller_tick(connectionc);
     }
-    sleep(.25);
+    sleep(1);
   }
   return 0;
 }
