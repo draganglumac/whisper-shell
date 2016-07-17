@@ -27,7 +27,7 @@
 #define COL_SYS    4
 
 #define CHAT ui->panels[0]
-#define LOG    ui->panels[1]
+#define LOG  ui->panels[1]
 
 static char status_buffer[1024];
 static char *pb = status_buffer;
@@ -174,28 +174,35 @@ void display_remote_message(ui_t *ui, char *msg) {
 void display_system_message(ui_t *ui, char *msg) {
   display_status_message(ui, msg , COL_SYS);
 }
+void reset_borders(ui_t *ui) {
+  wborder(ui->screen, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+  wborder(ui->log, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
+}
 void show_chat(ui_t *ui) {
+  reset_borders(ui);
   wresize(ui->screen, LINES - 6, COLS - 1);
   box(ui->screen, 0, 0);
-  top_panel(CHAT);
   hide_panel(LOG);
+  top_panel(CHAT);
   update_panels();
   doupdate();
 }
 void show_log(ui_t *ui) {
+  reset_borders(ui);
   wresize(ui->log, LINES - 6, COLS - 1);
   mvwin(ui->log, 1, 1);
   box(ui->log, 0, 0);
-  top_panel(LOG);
   hide_panel(CHAT);
+  top_panel(LOG);
   update_panels();
   doupdate();
 }
 void show_split(ui_t *ui) {
+  reset_borders(ui);
   wresize(ui->screen, LINES - 6, COLS/2 - 1);
   box(ui->screen, 0, 0);
   show_panel(CHAT);
-  wresize(ui->log, LINES - 6, COLS/2 - 1);
+  wresize(ui->log, LINES - 6, COLS/2);
   mvwin(ui->log, 1, COLS/2);
   box(ui->log, 0, 0);
   show_panel(LOG);
