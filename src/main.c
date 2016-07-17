@@ -187,7 +187,7 @@ void* gui_loop(void*args) {
           "COMMANDS\n:quit to quit\n:peers to list peers \
           \n:connect allows you to select a user to connect to\n");
     }
-    if(strcmp(message,":connect") == 0) {
+    else if(strcmp(message,":connect") == 0) {
       display_system_message(ui,"Name of user to connect to:\n");
       message = get_message(ui);
 
@@ -195,7 +195,8 @@ void* gui_loop(void*args) {
       if(!p) {
         display_system_message(ui,"Peer not found\n");
         continue;
-      }else {
+      }
+      else {
         display_system_message(ui,"Connecting...\n");
         //----------------------------------------------------------------------
         session *ses = session_controller_session_create(sc,p);
@@ -208,13 +209,22 @@ void* gui_loop(void*args) {
         free(session_id);
       }
     }
-    if(strcmp(message,":peers") == 0) {
+    else if(strcmp(message,":peers") == 0) {
       show_active_peers(store);
     }
-    if(strcmp(message,":sessions") == 0) {
+    else if(strcmp(message,":sessions") == 0) {
       show_sessions(); 
     }
-    if(strcmp(message,":quit") == 0) {
+    else if(strcmp(message, ":log") == 0) {
+      show_log(ui);
+    }
+    else if(strcmp(message, ":chat") == 0) {
+      show_chat(ui);
+    }
+    else if(strcmp(message, ":split") == 0) {
+      display_system_message(ui, "Split chat and log panels\n");
+    }
+    else if(strcmp(message,":quit") == 0) {
       log_thread_run = 0;
       display_system_message(ui,"STOPPING WHISPER_CORE\n"); 
 

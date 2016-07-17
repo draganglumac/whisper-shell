@@ -25,6 +25,10 @@
 #define COL_LOCAL  2
 #define COL_REMOTE 3
 #define COL_SYS    4
+
+#define CHAT ui->panels[0]
+#define LOG    ui->panels[1]
+
 static char status_buffer[1024];
 static char *pb = status_buffer;
 void init_colours() {
@@ -62,7 +66,19 @@ ui_t *create_ui() {
   scrollok(ui->screen, TRUE);
   box(ui->screen, 0, 0);
   ui->next_line = 1;
-  wrefresh(ui->screen);
+  CHAT = new_panel(ui->screen);
+  
+  ui->log = newwin(LINES - 6, COLS - 1, 1, 1);
+  scrollok(ui->log, TRUE);
+  box(ui->log, 0, 0);
+  ui->next_log_line = 1;
+  LOG = new_panel(ui->log);
+  
+  set_panel_userptr(CHAT, LOG);
+  set_panel_userptr(LOG, CHAT);
+  top_panel(CHAT);
+  hide_panel(LOG);
+  doupdate();
 
   ui->prompt = newwin(4, COLS - 1, LINES - 5, 1);
   show_prompt(ui);
@@ -94,6 +110,18 @@ void update_next_line(ui_t *ui) {
     ui->next_line = lines;
   }
 }
+void update_next_log_line(ui_t *ui) {
+  int lines, cols;
+  getmaxyx(ui->log, lines, cols);
+  if (ui->next_log_line >= --lines) {
+    scroll(ui->log);
+    ui->next_log_line--;
+  }
+  else {
+    getyx(ui->log, lines, cols);
+    ui->next_log_line = lines;
+  }
+}
 void display_message(ui_t *ui, char *msg, int col_flag) {
   int row, col;
   getyx(ui->prompt, row, col);
@@ -102,7 +130,8 @@ void display_message(ui_t *ui, char *msg, int col_flag) {
   wattroff(ui->screen, COLOR_PAIR(col_flag));
   update_next_line(ui);
   box(ui->screen, 0, 0);
-  wrefresh(ui->screen);
+  update_panels();
+  doupdate();
   wmove(ui->prompt, row, col);
   wrefresh(ui->prompt);
 }
@@ -113,12 +142,13 @@ void display_status_message(ui_t *ui, char *msg, int col_flag) {
   while (*pm != '\0') {
     if (*pm == '\n') {
       *pb = '\0';
-      wattron(ui->screen, COLOR_PAIR(col_flag));
-      mvwprintw(ui->screen, ui->next_line, 1, "%s\n", status_buffer);
+      wattron(ui->log, COLOR_PAIR(col_flag));
+      mvwprintw(ui->log, ui->next_log_line, 1, "%s\n", status_buffer);
       update_next_line(ui);
-      wattroff(ui->screen, COLOR_PAIR(col_flag));
-      box(ui->screen, 0, 0);
-      wrefresh(ui->screen);
+      wattroff(ui->log, COLOR_PAIR(col_flag));
+      box(ui->log, 0, 0);
+      update_panels();
+      doupdate();
       pb = status_buffer;
       ++pm;
     }
@@ -142,3 +172,19 @@ void display_remote_message(ui_t *ui, char *msg) {
 void display_system_message(ui_t *ui, char *msg) {
   display_status_message(ui, msg , COL_SYS);
 }
+void show_chat(ui_t *ui) {
+  top_panel(CHAT);
+  hide_panel(LOG);
+  update_panels();
+  doupdate();
+}
+void show_log(ui_t *ui) {
+  top_panel(LOG);
+  hide_panel(CHAT);
+  update_panels();
+  doupdate();
+}
+void show_split(ui_t *ui) {
+  // do nothing
+}
+
