@@ -222,7 +222,7 @@ void* gui_loop(void*args) {
       show_chat(ui);
     }
     else if(strcmp(message, ":split") == 0) {
-      display_system_message(ui, "Split chat and log panels\n");
+      show_split(ui);
     }
     else if(strcmp(message,":quit") == 0) {
       log_thread_run = 0;

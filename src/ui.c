@@ -73,11 +73,13 @@ ui_t *create_ui() {
   box(ui->log, 0, 0);
   ui->next_log_line = 1;
   LOG = new_panel(ui->log);
-  
+ 
   set_panel_userptr(CHAT, LOG);
   set_panel_userptr(LOG, CHAT);
+  
   top_panel(CHAT);
   hide_panel(LOG);
+  update_panels();
   doupdate();
 
   ui->prompt = newwin(4, COLS - 1, LINES - 5, 1);
@@ -173,18 +175,31 @@ void display_system_message(ui_t *ui, char *msg) {
   display_status_message(ui, msg , COL_SYS);
 }
 void show_chat(ui_t *ui) {
+  wresize(ui->screen, LINES - 6, COLS - 1);
+  box(ui->screen, 0, 0);
   top_panel(CHAT);
   hide_panel(LOG);
   update_panels();
   doupdate();
 }
 void show_log(ui_t *ui) {
+  wresize(ui->log, LINES - 6, COLS - 1);
+  mvwin(ui->log, 1, 1);
+  box(ui->log, 0, 0);
   top_panel(LOG);
   hide_panel(CHAT);
   update_panels();
   doupdate();
 }
 void show_split(ui_t *ui) {
-  // do nothing
+  wresize(ui->screen, LINES - 6, COLS/2 - 1);
+  box(ui->screen, 0, 0);
+  show_panel(CHAT);
+  wresize(ui->log, LINES - 6, COLS/2 - 1);
+  mvwin(ui->log, 1, COLS/2);
+  box(ui->log, 0, 0);
+  show_panel(LOG);
+  update_panels();
+  doupdate();
 }
 
