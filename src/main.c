@@ -169,7 +169,6 @@ void *run_log_thread(void *args) {
       message[bytesread+1] = '\0';
       last_read_pos += bytesread;
       display_system_message(ui, message);
-      free(message);
     }
     nanosleep(&interval, NULL);
   }

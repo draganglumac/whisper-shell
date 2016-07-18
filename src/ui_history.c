@@ -16,6 +16,7 @@
  * =====================================================================================
  */
 #include <stdlib.h>
+#include <string.h>
 #include "ui_history.h"
 
 
@@ -31,6 +32,9 @@ void ui_history_destroy(ui_history **phist) {
     if (h->history[i] != NULL) {
       free(h->history[i]->message);
       free(h->history[i]);
+    }
+    else {
+      break;
     }
   }
   free(h);
@@ -50,7 +54,10 @@ void insert_at_end(ui_history *h, hist_item *hitem) {
 void ui_history_add(ui_history *h, char *msg, MSG_TYPE type) {
   hist_item *item = malloc(sizeof(hist_item));
   item->type = type;
-  item->message = msg;
+  // make a copy of the message
+  int msg_len = strlen(msg);
+  item->message = malloc(msg_len);
+  strncpy(item->message, msg, msg_len);
 
   safe_increment(&h->end);
   if (h->start == h->end && h->history[0] != NULL) {
