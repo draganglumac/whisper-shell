@@ -36,7 +36,7 @@ static char *interface = NULL;
 static peerstore *store = NULL;
 static ui_t *ui = NULL;
 static int log_thread_run = 1;
-
+static FILE* fp;
 static int app_is_input_guid_size(char *input) {
   if ((strlen(input) / 2) == 16) {
     return 1;
@@ -72,7 +72,48 @@ static void pretty_print_peer_in_col(peer *p, jnx_int32 colour) {
       "%-32s %-16s %s\n", guid, p->host_address, p->user_name);
   free(guid);
 }
+static void show_sessions() {
+  if(!sc) {
+    display_system_message(ui,"Session manager not initialised - start whisper core\n");
+    return;
+  }
 
+  jnx_node *lh = sc->session_list->head;
+  int c = 0;
+  if(!lh) {
+    display_system_message(ui,"No sessions found\n");
+    return;
+  }
+  while(lh) {
+    session *s = lh->_data;
+    jnx_char *sstr;
+    jnx_guid_to_string(&(*s).id,&sstr);
+
+    char buffer[256];
+    sprintf(buffer,"(%d) %s\n:",c,sstr);
+    display_system_message(ui,buffer);
+    free(sstr);
+
+    jnx_node *ch = s->connection_request_list->head;
+
+    while(ch) {
+
+      connection_request *cr = ch->_data;
+      jnx_char *dstr;
+      jnx_guid_to_string(&(*cr).id,&dstr);
+      char buf[256];
+      sprintf(buf,"-- %s\n",dstr);
+
+      free(dstr);
+
+      ch = ch->next_node;
+    }
+
+    ++c;
+    lh = lh->next_node;
+  }
+
+}
 static void show_active_peers(peerstore *ps) {
   jnx_guid **active_guids;
   if(!ps) {
@@ -128,11 +169,76 @@ void *run_log_thread(void *args) {
       message[bytesread+1] = '\0';
       last_read_pos += bytesread;
       display_system_message(ui, message);
-      //      free(message);
+      free(message);
     }
     nanosleep(&interval, NULL);
   }
   close(fd);
+  return NULL;
+}
+void* gui_loop(void*args) {
+
+  while(TRUE) {
+
+    char *message = get_message(ui);
+
+    if(strcmp(message,":help") == 0) {
+      display_system_message(ui,
+          "COMMANDS\n:quit to quit\n:peers to list peers \
+          \n:connect allows you to select a user to connect to\n");
+    }
+    else if(strcmp(message,":connect") == 0) {
+      display_system_message(ui,"Name of user to connect to:\n");
+      message = get_message(ui);
+
+      peer *p = app_peer_from_input(message);
+      if(!p) {
+        display_system_message(ui,"Peer not found\n");
+        continue;
+      }
+      else {
+        display_system_message(ui,"Connecting...\n");
+        //----------------------------------------------------------------------
+        session *ses = session_controller_session_create(sc,p);
+        //----------------------------------------------------------------------
+        jnx_char *session_id;
+        jnx_guid_to_string(&(*ses).id,&session_id);
+        char buffer[256] = {};
+        sprintf(buffer,"Created session %s\n", session_id);
+        display_system_message(ui,buffer);
+        free(session_id);
+      }
+    }
+    else if(strcmp(message,":peers") == 0) {
+      show_active_peers(store);
+    }
+    else if(strcmp(message,":sessions") == 0) {
+      show_sessions(); 
+    }
+    else if(strcmp(message, ":log") == 0) {
+      show_log(ui);
+    }
+    else if(strcmp(message, ":chat") == 0) {
+      show_chat(ui);
+    }
+    else if(strcmp(message, ":split") == 0) {
+      show_split(ui);
+    }
+    else if(strcmp(message,":quit") == 0) {
+      log_thread_run = 0;
+      display_system_message(ui,"STOPPING WHISPER_CORE\n"); 
+
+      session_controller_destroy(&sc);
+      connection_controller_destroy(&connectionc);
+      destroy_ui(ui);
+      jnx_log_set_output(NULL);
+      fclose(fp);
+      exit(0);
+      connectionc = NULL;
+      sc = NULL;
+      ui = NULL;
+    }
+  }
   return NULL;
 }
 int main(int argc, char **argv) {
@@ -146,7 +252,6 @@ int main(int argc, char **argv) {
 
   system("rm -rf logtest.conf");
 
-  FILE* fp;
   if ((fp = fopen("logtest.conf", "w")) == NULL) {
     perror("file: ");
     return -1;
@@ -188,50 +293,13 @@ int main(int argc, char **argv) {
   sc = session_controller_create(connectionc,on_new_session_message);
   //----------------------------------------------------------------------------
 
+  jnx_thread_create_disposable(gui_loop,NULL);
+
   while(TRUE) {
-
-    char *message = get_message(ui);
-
-    if(strcmp(message,":help") == 0) {
-      display_system_message(ui,"\nCOMMANDS\n :quit to quit\n :help for help\n :peers to list peers\n");
+    if(connectionc){
+      connection_controller_tick(connectionc);
     }
-    if(strcmp(message,":connect") == 0) {
-      display_system_message(ui,"\n Name of user to connect to:\n");
-      message = get_message(ui);
-
-      peer *p = app_peer_from_input(message);
-      if(!p) {
-        display_system_message(ui,"\nPeer not found\n");
-        continue;
-      }else {
-        display_system_message(ui,"\nConnecting...\n");
-        //----------------------------------------------------------------------
-        session *ses = session_controller_session_create(sc,p);
-        //----------------------------------------------------------------------
-        jnx_char *session_id;
-        jnx_guid_to_string(&(*ses).id,&session_id);
-        char buffer[256] = {};
-        sprintf(buffer,"Created session %s\n", session_id);
-        display_system_message(ui,buffer);
-        free(session_id);
-      }
-    }
-    if(strcmp(message,":peers") == 0) {
-      show_active_peers(store);
-    }
-    if(strcmp(message,":quit") == 0) {
-      log_thread_run = 0;
-      display_system_message(ui,"STOPPING WHISPER_CORE\n"); 
-      break;
-    }
-    connection_controller_tick(connectionc);
+    sleep(1);
   }
-
-  session_controller_destroy(&sc);
-  connection_controller_destroy(&connectionc);
-  destroy_ui(ui);
-  jnx_log_set_output(NULL);
-  fclose(fp);
-  exit(0);
   return 0;
 }
