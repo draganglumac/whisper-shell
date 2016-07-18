@@ -20,6 +20,7 @@
 #include <stdio.h>
 
 #include "ui.h"
+#include "ui_history.h"
 
 #define COL_LOGO   1
 #define COL_LOCAL  2
@@ -29,8 +30,12 @@
 #define CHAT ui->panels[0]
 #define LOG  ui->panels[1]
 
-static char status_buffer[1024];
-static char *pb = status_buffer;
+static char system_buffer[1024];
+static char *pb = system_buffer;
+
+ui_history *chat_history;
+ui_history *log_history;
+
 void init_colours() {
   if (has_colors() == FALSE) {
     endwin();
@@ -67,13 +72,15 @@ ui_t *create_ui() {
   box(ui->screen, 0, 0);
   ui->next_line = 1;
   CHAT = new_panel(ui->screen);
-  
+  chat_history = ui_history_create();
+
   ui->log = newwin(LINES - 6, COLS - 1, 1, 1);
   scrollok(ui->log, TRUE);
   box(ui->log, 0, 0);
   ui->next_log_line = 1;
   LOG = new_panel(ui->log);
- 
+  log_history = ui_history_create();
+
   set_panel_userptr(CHAT, LOG);
   set_panel_userptr(LOG, CHAT);
   
@@ -88,8 +95,14 @@ ui_t *create_ui() {
   return ui;
 }
 void destroy_ui(ui_t *ui) {
+  del_panel(CHAT);
   delwin(ui->screen);
+  ui_history_destroy(&chat_history);
+  
+  del_panel(LOG);
   delwin(ui->prompt);
+  ui_history_destroy(&log_history);
+
   endwin();
   free(ui);
 }
@@ -145,13 +158,13 @@ void display_status_message(ui_t *ui, char *msg, int col_flag) {
     if (*pm == '\n') {
       *pb = '\0';
       wattron(ui->log, COLOR_PAIR(col_flag));
-      mvwprintw(ui->log, ui->next_log_line, 1, "%s\n", status_buffer);
+      mvwprintw(ui->log, ui->next_log_line, 1, "%s\n", system_buffer);
       update_next_log_line(ui);
       wattroff(ui->log, COLOR_PAIR(col_flag));
       box(ui->log, 0, 0);
       update_panels();
       doupdate();
-      pb = status_buffer;
+      pb = system_buffer;
       ++pm;
     }
     else {
