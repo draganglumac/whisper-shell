@@ -47,12 +47,16 @@ void insert_at_end(ui_history *h, hist_item *hitem) {
   }
   h->history[h->end] = hitem;
 }
-ui_history* ui_history_add(ui_history *h, hist_item* hitem) {
+void ui_history_add(ui_history *h, char *msg, MSG_TYPE type) {
+  hist_item *item = malloc(sizeof(hist_item));
+  item->type = type;
+  item->message = msg;
+
   safe_increment(&h->end);
   if (h->start == h->end && h->history[0] != NULL) {
     safe_increment(&h->start);
   }
-  insert_at_end(h, hitem);
+  insert_at_end(h, item);
 }
 jnx_list *ui_history_get(ui_history *h, int start, int num_items) {
   jnx_list *result = jnx_list_create();

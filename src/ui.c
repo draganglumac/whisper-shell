@@ -177,14 +177,15 @@ void display_status_message(ui_t *ui, char *msg, int col_flag) {
   wrefresh(ui->prompt);
 }
 void display_local_message(ui_t *ui, char *msg) {
+  ui_history_add(chat_history, msg, MSG_LOCAL);
   display_message(ui, msg, COL_LOCAL);
-  free(msg);
 }
 void display_remote_message(ui_t *ui, char *msg) {
+  ui_history_add(chat_history, msg, MSG_REMOTE);
   display_message(ui, msg + 2, COL_REMOTE);
-  free(msg);
 }
 void display_system_message(ui_t *ui, char *msg) {
+  ui_history_add(log_history, msg, MSG_SYSTEM);
   display_status_message(ui, msg , COL_SYS);
 }
 void reset_borders(ui_t *ui) {

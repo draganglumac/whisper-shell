@@ -49,7 +49,7 @@ ui_history* ui_history_create();
 void ui_history_destroy(ui_history **phist);
 
 // Add a hist_item * to the history
-ui_history* ui_history_add(ui_history *hist, hist_item* hitem);
+void ui_history_add(ui_history *hist, char *msg, MSG_TYPE type);
 
 // Returns a linked list of (hist_item *) from position `(h->start + start) % MAX_HISTORY`
 jnx_list* ui_history_get(ui_history *h, int start, int num_items);
