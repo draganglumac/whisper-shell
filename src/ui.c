@@ -188,16 +188,24 @@ void display_system_message(ui_t *ui, char *msg) {
   ui_history_add(log_history, msg, MSG_SYSTEM);
   display_status_message(ui, msg , COL_SYS);
 }
-void show_item(WINDOW *win, hist_item *item) {
+void show_hist_item(WINDOW *win, hist_item *item, int row) {
   // ToDo - implement 
 }
-void restore_history(WINDOW *win, ui_history *h) {
-  int i;
-  int screen_lines = LINES - 6;
-  if (h->end < screen_lines)
-    screen_lines = h->end;
-  for (i = 0; i < screen_lines; i++)
-    show_item(win, h->history[i]);
+void restore_history(WINDOW *win, ui_history *h, int *pnext_line) {
+  int num_lines = LINES - 6;
+  if (h->end > h->start && h->end < num_lines)
+    num_lines = h->end;
+  *pnext_line = 1;
+  int start = h->end - num_lines;
+  if (start < 0)
+    start += MAX_HISTORY;
+  jnx_list *hitems = ui_history_get(h, start, num_lines);
+  jnx_node *first = NULL;
+  while(first = jnx_list_remove_front(&hitems)) {
+    hist_item *hitem = (hist_item*)first->_data;
+    show_hist_item(win, hitem, *pnext_line);
+    (*pnext_line)++;
+  }
 }
 void reset_borders(ui_t *ui) {
   wborder(ui->screen, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
@@ -208,7 +216,7 @@ void show_chat(ui_t *ui) {
   wclear(ui->screen);
   wresize(ui->screen, LINES - 6, COLS - 1);
   box(ui->screen, 0, 0);
-  restore_history(ui->screen, chat_history);
+  restore_history(ui->screen, chat_history, &ui->next_line);
   hide_panel(LOG);
   top_panel(CHAT);
   update_panels();
@@ -220,7 +228,7 @@ void show_log(ui_t *ui) {
   wresize(ui->log, LINES - 6, COLS - 1);
   mvwin(ui->log, 1, 1);
   box(ui->log, 0, 0);
-  restore_history(ui->log, log_history);
+  restore_history(ui->log, log_history, &ui->next_log_line);
   hide_panel(CHAT);
   top_panel(LOG);
   update_panels();
