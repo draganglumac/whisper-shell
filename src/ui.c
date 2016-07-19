@@ -189,7 +189,17 @@ void display_system_message(ui_t *ui, char *msg) {
   display_status_message(ui, msg , COL_SYS);
 }
 void show_hist_item(WINDOW *win, hist_item *item, int row) {
-  // ToDo - implement 
+  int col_flag;
+  if (item->type == MSG_LOCAL)
+    col_flag = COL_LOCAL;
+  else if (item->type == MSG_REMOTE)
+    col_flag = COL_REMOTE;
+  else if (item->type == MSG_SYSTEM)
+    col_flag = COL_SYS;
+  
+  wattron(win, COLOR_PAIR(col_flag));
+  mvwprintw(win, row, 1, "%s\n", item->message);
+  wattroff(win, COLOR_PAIR(col_flag));
 }
 void restore_history(WINDOW *win, ui_history *h, int *pnext_line) {
   int num_lines = LINES - 6;
