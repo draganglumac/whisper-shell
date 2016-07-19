@@ -83,7 +83,7 @@ ui_t *create_ui() {
 
   set_panel_userptr(CHAT, LOG);
   set_panel_userptr(LOG, CHAT);
-  
+
   top_panel(CHAT);
   hide_panel(LOG);
   update_panels();
@@ -98,7 +98,7 @@ void destroy_ui(ui_t *ui) {
   del_panel(CHAT);
   delwin(ui->screen);
   ui_history_destroy(&chat_history);
-  
+
   del_panel(LOG);
   delwin(ui->prompt);
   ui_history_destroy(&log_history);
@@ -188,14 +188,27 @@ void display_system_message(ui_t *ui, char *msg) {
   ui_history_add(log_history, msg, MSG_SYSTEM);
   display_status_message(ui, msg , COL_SYS);
 }
+void show_item(WINDOW *win, hist_item *item) {
+  // ToDo - implement 
+}
+void restore_history(WINDOW *win, ui_history *h) {
+  int i;
+  int screen_lines = LINES - 6;
+  if (h->end < screen_lines)
+    screen_lines = h->end;
+  for (i = 0; i < screen_lines; i++)
+    show_item(win, h->history[i]);
+}
 void reset_borders(ui_t *ui) {
   wborder(ui->screen, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
   wborder(ui->log, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
 }
 void show_chat(ui_t *ui) {
   reset_borders(ui);
+  wclear(ui->screen);
   wresize(ui->screen, LINES - 6, COLS - 1);
   box(ui->screen, 0, 0);
+  restore_history(ui->screen, chat_history);
   hide_panel(LOG);
   top_panel(CHAT);
   update_panels();
@@ -203,9 +216,11 @@ void show_chat(ui_t *ui) {
 }
 void show_log(ui_t *ui) {
   reset_borders(ui);
+  wclear(ui->log);
   wresize(ui->log, LINES - 6, COLS - 1);
   mvwin(ui->log, 1, 1);
   box(ui->log, 0, 0);
+  restore_history(ui->log, log_history);
   hide_panel(CHAT);
   top_panel(LOG);
   update_panels();
