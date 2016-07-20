@@ -210,9 +210,9 @@ void restore_history(WINDOW *win, ui_history *h, int *pnext_line) {
   if (start < 0)
     start += MAX_HISTORY;
   jnx_list *hitems = ui_history_get(h, start, num_lines);
-  jnx_node *first = NULL;
+  void *first = NULL;
   while(first = jnx_list_remove_front(&hitems)) {
-    hist_item *hitem = (hist_item*)first->_data;
+    hist_item *hitem = (hist_item*)first;
     show_hist_item(win, hitem, *pnext_line);
     (*pnext_line)++;
   }

@@ -56,7 +56,7 @@ void ui_history_add(ui_history *h, char *msg, MSG_TYPE type) {
   item->type = type;
   // make a copy of the message
   int msg_len = strlen(msg);
-  item->message = malloc(msg_len);
+  item->message = calloc(msg_len, sizeof(char));
   strncpy(item->message, msg, msg_len);
 
   safe_increment(&h->end);
