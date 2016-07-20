@@ -202,6 +202,8 @@ void show_hist_item(WINDOW *win, hist_item *item, int row) {
   wattroff(win, COLOR_PAIR(col_flag));
 }
 void restore_history(WINDOW *win, ui_history *h, int *pnext_line) {
+  if (h->end == -1)
+    return;
   int num_lines = LINES - 6;
   if (h->end > h->start && h->end < num_lines)
     num_lines = h->end;
@@ -225,8 +227,8 @@ void show_chat(ui_t *ui) {
   reset_borders(ui);
   wclear(ui->screen);
   wresize(ui->screen, LINES - 6, COLS - 1);
-  box(ui->screen, 0, 0);
   restore_history(ui->screen, chat_history, &ui->next_line);
+  box(ui->screen, 0, 0);
   hide_panel(LOG);
   top_panel(CHAT);
   update_panels();
@@ -237,8 +239,8 @@ void show_log(ui_t *ui) {
   wclear(ui->log);
   wresize(ui->log, LINES - 6, COLS - 1);
   mvwin(ui->log, 1, 1);
-  box(ui->log, 0, 0);
   restore_history(ui->log, log_history, &ui->next_log_line);
+  box(ui->log, 0, 0);
   hide_panel(CHAT);
   top_panel(LOG);
   update_panels();
