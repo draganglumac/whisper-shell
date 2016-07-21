@@ -153,26 +153,13 @@ void display_message(ui_t *ui, char *msg, int col_flag) {
 void display_status_message(ui_t *ui, char *msg, int col_flag) {
   int row, col;
   getyx(ui->prompt, row, col);
-  char *pm = msg;
-  while (*pm != '\0') {
-    if (*pm == '\n') {
-      *pb = '\0';
-      wattron(ui->log, COLOR_PAIR(col_flag));
-      mvwprintw(ui->log, ui->next_log_line, 1, "%s\n", system_buffer);
-      update_next_log_line(ui);
-      wattroff(ui->log, COLOR_PAIR(col_flag));
-      box(ui->log, 0, 0);
-      update_panels();
-      doupdate();
-      pb = system_buffer;
-      ++pm;
-    }
-    else {
-      *pb = *pm;
-      ++pm;
-      ++pb;
-    }
-  }
+  wattron(ui->log, COLOR_PAIR(col_flag));
+  mvwprintw(ui->log, ui->next_log_line, 1, "%s\n", system_buffer);
+  update_next_log_line(ui);
+  wattroff(ui->log, COLOR_PAIR(col_flag));
+  box(ui->log, 0, 0);
+  update_panels();
+  doupdate();
   wmove(ui->prompt, row, col);
   wrefresh(ui->prompt);
 }
@@ -196,7 +183,7 @@ void show_hist_item(WINDOW *win, hist_item *item, int row) {
     col_flag = COL_REMOTE;
   else if (item->type == MSG_SYSTEM)
     col_flag = COL_SYS;
-  
+
   wattron(win, COLOR_PAIR(col_flag));
   mvwprintw(win, row, 1, "%s\n", item->message);
   wattroff(win, COLOR_PAIR(col_flag));
