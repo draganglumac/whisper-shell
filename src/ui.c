@@ -247,4 +247,29 @@ void show_split(ui_t *ui) {
 }
 void process_mouse_events(ui_t *ui) {
   // ToDo - Handle all the mouse events here
+  int c;
+  MEVENT event;
+
+  /* Get all the mouse events */
+  mousemask(ALL_MOUSE_EVENTS, NULL);
+  int interval = mouseinterval(1);
+  keypad(stdscr, FALSE);
+  keypad(ui->screen, TRUE);
+
+  c = wgetch(ui->screen);
+  switch(c)
+  {	
+    case KEY_MOUSE:
+      if(getmouse(&event) == OK)
+      {	/* When the user clicks left mouse button */
+        if(event.bstate & BUTTON1_PRESSED)
+          display_local_message(ui, "BUTTON1_PRESSED");
+      }
+      else if (event.bstate & BUTTON1_DOUBLE_CLICKED)
+      {
+        display_local_message(ui, "BUTTON1_DOUBLE_CLICKED");
+      }
+  }
+  keypad(ui->screen, FALSE);
+  keypad(stdscr, TRUE);
 }
