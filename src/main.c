@@ -159,6 +159,7 @@ void *run_log_thread(void *args) {
   interval.tv_sec = 0;
   interval.tv_nsec = 10L * 1000 * 1000;
   ssize_t bytesread = 0, last_read_pos = 0, end_pos = 0, offset = 0;
+  char *leftover = NULL;
   while(log_thread_run) {
     end_pos = lseek(fd,0L,SEEK_END);
     offset = end_pos - last_read_pos;
@@ -168,7 +169,8 @@ void *run_log_thread(void *args) {
       bytesread = read(fd, (void*)message, offset);
       message[bytesread+1] = '\0';
       last_read_pos += bytesread;
-      display_system_message(ui, message);
+      leftover = ui_display_log_chunk(ui, message, leftover);
+      free(message);
     }
     nanosleep(&interval, NULL);
   }
