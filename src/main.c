@@ -28,6 +28,8 @@
 #include <jnxc_headers/jnx_thread.h>
 #include <time.h>
 #include "ui.h"
+#include "ui_display_log.h"
+
 static char *baddr = NULL;
 static connection_controller *connectionc;
 static session_controller *sc;
