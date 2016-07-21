@@ -44,4 +44,5 @@ void display_system_message(ui_t *ui, char *msg);
 void show_chat(ui_t *ui);
 void show_log(ui_t *ui);
 void show_split(ui_t *ui);
+void process_mouse_events(ui_t *ui);
 #endif // __UI_H__

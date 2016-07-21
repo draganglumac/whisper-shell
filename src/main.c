@@ -183,6 +183,8 @@ void* gui_loop(void*args) {
 
   while(TRUE) {
 
+    process_mouse_events(ui);
+    
     char *message = get_message(ui);
 
     if(strcmp(message,":help") == 0) {

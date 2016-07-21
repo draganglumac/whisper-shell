@@ -245,4 +245,6 @@ void show_split(ui_t *ui) {
   update_panels();
   doupdate();
 }
-
+void process_mouse_events(ui_t *ui) {
+  // ToDo - Handle all the mouse events here
+}
