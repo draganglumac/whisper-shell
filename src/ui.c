@@ -154,7 +154,7 @@ void display_status_message(ui_t *ui, char *msg, int col_flag) {
   int row, col;
   getyx(ui->prompt, row, col);
   wattron(ui->log, COLOR_PAIR(col_flag));
-  mvwprintw(ui->log, ui->next_log_line, 1, "%s\n", system_buffer);
+  mvwprintw(ui->log, ui->next_log_line, 1, "%s\n", msg);
   update_next_log_line(ui);
   wattroff(ui->log, COLOR_PAIR(col_flag));
   box(ui->log, 0, 0);
