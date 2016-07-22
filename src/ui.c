@@ -27,8 +27,9 @@
 #define COL_REMOTE 3
 #define COL_SYS    4
 
-#define CHAT ui->panels[0]
-#define LOG  ui->panels[1]
+#define CHAT  ui->panels[0]
+#define LOG   ui->panels[1]
+#define ALERT ui->panels[3]
 
 static char system_buffer[1024];
 static char *pb = system_buffer;
@@ -81,11 +82,16 @@ ui_t *create_ui() {
   LOG = new_panel(ui->log);
   log_history = ui_history_create();
 
+  ui->alert = newwin(3, COLS, 1, 0);
+  ALERT = new_panel(ui->alert);
+
   set_panel_userptr(CHAT, LOG);
-  set_panel_userptr(LOG, CHAT);
+  set_panel_userptr(LOG, ALERT);
+  set_panel_userptr(ALERT, CHAT);
 
   top_panel(CHAT);
   hide_panel(LOG);
+  hide_panel(ALERT);
   update_panels();
   doupdate();
 
@@ -244,6 +250,9 @@ void show_split(ui_t *ui) {
   show_panel(LOG);
   update_panels();
   doupdate();
+}
+void show_alert(ui_t *ui, char *message) {
+
 }
 void process_mouse_events(ui_t *ui) {
   // ToDo - Handle all the mouse events here

@@ -22,10 +22,11 @@
 #include <panel.h>
 
 typedef struct {
-  PANEL *panels[2];
+  PANEL *panels[3];
 	WINDOW *prompt;
 	WINDOW *screen;	
   WINDOW *log;
+  WINDOW *alert;
   int next_line;
   int next_log_line;
 } ui_t;
@@ -45,4 +46,5 @@ void show_chat(ui_t *ui);
 void show_log(ui_t *ui);
 void show_split(ui_t *ui);
 void process_mouse_events(ui_t *ui);
+void show_alert(ui_t *ui, char *message);
 #endif // __UI_H__
