@@ -18,6 +18,7 @@
 
 #ifndef __UI_H__
 #define __UI_H__
+
 #include <ncurses.h>
 #include <panel.h>
 
@@ -47,4 +48,6 @@ void show_log(ui_t *ui);
 void show_split(ui_t *ui);
 void process_mouse_events(ui_t *ui);
 void show_alert(ui_t *ui, char *message);
+void hide_alert(ui_t *ui); 
+
 #endif // __UI_H__

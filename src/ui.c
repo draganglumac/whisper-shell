@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "ui.h"
 #include "ui_history.h"
@@ -29,7 +30,7 @@
 
 #define CHAT  ui->panels[0]
 #define LOG   ui->panels[1]
-#define ALERT ui->panels[3]
+#define ALERT ui->panels[2]
 
 static char system_buffer[1024];
 static char *pb = system_buffer;
@@ -108,6 +109,9 @@ void destroy_ui(ui_t *ui) {
   del_panel(LOG);
   delwin(ui->prompt);
   ui_history_destroy(&log_history);
+
+  del_panel(ALERT);
+  delwin(ui->alert);
 
   endwin();
   free(ui);
@@ -217,6 +221,7 @@ void reset_borders(ui_t *ui) {
   wborder(ui->log, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
 }
 void show_chat(ui_t *ui) {
+  hide_panel(ALERT);
   reset_borders(ui);
   wclear(ui->screen);
   wresize(ui->screen, LINES - 6, COLS - 1);
@@ -228,6 +233,7 @@ void show_chat(ui_t *ui) {
   doupdate();
 }
 void show_log(ui_t *ui) {
+  hide_panel(ALERT);
   reset_borders(ui);
   wclear(ui->log);
   wresize(ui->log, LINES - 6, COLS - 1);
@@ -240,6 +246,7 @@ void show_log(ui_t *ui) {
   doupdate();
 }
 void show_split(ui_t *ui) {
+  hide_panel(ALERT);
   reset_borders(ui);
   wresize(ui->screen, LINES - 6, COLS/2 - 1);
   box(ui->screen, 0, 0);
@@ -252,7 +259,21 @@ void show_split(ui_t *ui) {
   doupdate();
 }
 void show_alert(ui_t *ui, char *message) {
-
+  int cols = COLS;
+  int x = (COLS - strlen(message)) / 2;
+  wattron(ui->alert, COLOR_PAIR(COL_LOGO) | A_BOLD);
+  mvwprintw(ui->alert, 0, 0, "%*s", COLS," ");
+  mvwprintw(ui->alert, 1, 0, "%*s", COLS," ");
+  mvwprintw(ui->alert, 2, 0, "%*s", COLS," ");
+  mvwprintw(ui->alert, 1, x, message);
+  wattroff(ui->alert, COLOR_PAIR(COL_LOGO) | A_BOLD);
+  show_panel(ALERT);
+  top_panel(ALERT);
+  update_panels();
+  doupdate();
+}
+void hide_alert(ui_t *ui) {
+  hide_panel(ALERT);
 }
 void process_mouse_events(ui_t *ui) {
   // ToDo - Handle all the mouse events here
