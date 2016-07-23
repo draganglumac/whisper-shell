@@ -285,6 +285,8 @@ void process_mouse_events(ui_t *ui) {
   int interval = mouseinterval(1);
   keypad(stdscr, FALSE);
   keypad(ui->screen, TRUE);
+  keypad(ui->log, FALSE);
+  keypad(ui->prompt, FALSE);
 
   c = wgetch(ui->screen);
   switch(c)
@@ -300,6 +302,4 @@ void process_mouse_events(ui_t *ui) {
         display_local_message(ui, "BUTTON1_DOUBLE_CLICKED");
       }
   }
-  keypad(ui->screen, FALSE);
-  keypad(stdscr, TRUE);
 }
