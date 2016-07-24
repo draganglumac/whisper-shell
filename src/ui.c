@@ -35,10 +35,10 @@
 static char system_buffer[1024];
 static char *pb = system_buffer;
 
-ui_history *chat_history;
-ui_history *log_history;
+static ui_history *chat_history;
+static ui_history *log_history;
 
-void init_colours() {
+static void init_colours() {
   if (has_colors() == FALSE) {
     endwin();
     printf("Your terminal does not support colours.\n");
@@ -50,23 +50,19 @@ void init_colours() {
   init_pair(COL_REMOTE, COLOR_GREEN, COLOR_BLACK);
   init_pair(COL_SYS, COLOR_BLUE, COLOR_BLACK);
 }
-void show_prompt(ui_t *ui) {
+static void show_prompt(ui_t *ui) {
   wmove(ui->prompt, 1, 1);
   wclear(ui->prompt);
   mvwprintw(ui->prompt, 1, 1, "$> ");
   wrefresh(ui->prompt);
 }
-void display_logo() {
+static void display_logo() {
   attron(COLOR_PAIR(COL_LOGO) | A_BOLD);
   printw("%s", " Whisper Shell ");
   attroff(COLOR_PAIR(COL_LOGO) | A_BOLD);
   refresh();
 }
-ui_t *create_ui() {
-  ui_t *ui = malloc(sizeof(ui_t));
-
-  initscr();
-  init_colours();
+static void render_ui(ui_t *ui) {
   display_logo();
 
   ui->screen = newwin(LINES - 6, COLS - 1, 1, 1);
@@ -98,32 +94,62 @@ ui_t *create_ui() {
 
   ui->prompt = newwin(4, COLS - 1, LINES - 5, 1);
   show_prompt(ui);
+}
+ui_t *create_ui() {
+  ui_t *ui = malloc(sizeof(ui_t));
 
+  initscr();
+  init_colours();
+  noecho();
+
+  /* Get all the mouse events */
+  mousemask(ALL_MOUSE_EVENTS, NULL);
+  int interval = mouseinterval(1);
+  keypad(stdscr, TRUE);
+
+  render_ui(ui);
   return ui;
 }
 void destroy_ui(ui_t *ui) {
+  // chat panel and window
   del_panel(CHAT);
   delwin(ui->screen);
   ui_history_destroy(&chat_history);
-
+  // log panel and window
   del_panel(LOG);
-  delwin(ui->prompt);
+  delwin(ui->log);
   ui_history_destroy(&log_history);
-
+  // alert panel and window
   del_panel(ALERT);
   delwin(ui->alert);
-
+  // prompt window
+  delwin(ui->prompt);
+  
   endwin();
   free(ui);
 }
 char *get_user_input(ui_t *ui) {
-  char *msg = malloc(1024);
+  char *msg = calloc(1024, sizeof(char));
   wmove(ui->prompt, 1, 4);
-  wgetstr(ui->prompt, msg);
-  show_prompt(ui);
-  return msg;
+  wrefresh(ui->prompt);
+  int c, px, py;
+  while (c = getch()) {
+    if (c == KEY_MOUSE) {
+      process_mouse_events(ui);
+    }
+    else if (c == '\n') {
+      mvwinstr(ui->prompt, 1, 4, msg);
+      show_prompt(ui);
+      return msg;  
+    }
+    else {
+      getyx(ui->prompt, py, px);
+      mvwaddch(ui->prompt, py, px, c);
+      wrefresh(ui->prompt);
+    }
+  }
 }
-void update_next_line(ui_t *ui) {
+static void update_next_line(ui_t *ui) {
   int lines, cols;
   getmaxyx(ui->screen, lines, cols);
   if (ui->next_line >= --lines) {
@@ -135,7 +161,7 @@ void update_next_line(ui_t *ui) {
     ui->next_line = lines;
   }
 }
-void update_next_log_line(ui_t *ui) {
+static void update_next_log_line(ui_t *ui) {
   int lines, cols;
   getmaxyx(ui->log, lines, cols);
   if (ui->next_log_line >= --lines) {
@@ -147,7 +173,7 @@ void update_next_log_line(ui_t *ui) {
     ui->next_log_line = lines;
   }
 }
-void display_message(ui_t *ui, char *msg, int col_flag) {
+static void display_message(ui_t *ui, char *msg, int col_flag) {
   int row, col;
   getyx(ui->prompt, row, col);
   wattron(ui->screen, COLOR_PAIR(col_flag));
@@ -160,7 +186,7 @@ void display_message(ui_t *ui, char *msg, int col_flag) {
   wmove(ui->prompt, row, col);
   wrefresh(ui->prompt);
 }
-void display_status_message(ui_t *ui, char *msg, int col_flag) {
+static void display_status_message(ui_t *ui, char *msg, int col_flag) {
   int row, col;
   getyx(ui->prompt, row, col);
   wattron(ui->log, COLOR_PAIR(col_flag));
@@ -277,29 +303,19 @@ void hide_alert(ui_t *ui) {
 }
 void process_mouse_events(ui_t *ui) {
   // ToDo - Handle all the mouse events here
-  int c;
   MEVENT event;
 
-  /* Get all the mouse events */
-  mousemask(ALL_MOUSE_EVENTS, NULL);
-  int interval = mouseinterval(1);
-  keypad(stdscr, FALSE);
   keypad(ui->screen, TRUE);
   keypad(ui->log, FALSE);
   keypad(ui->prompt, FALSE);
 
-  c = wgetch(ui->screen);
-  switch(c)
-  {	
-    case KEY_MOUSE:
-      if(getmouse(&event) == OK)
-      {	/* When the user clicks left mouse button */
-        if(event.bstate & BUTTON1_PRESSED)
-          display_local_message(ui, "BUTTON1_PRESSED");
-      }
-      else if (event.bstate & BUTTON1_DOUBLE_CLICKED)
-      {
-        display_local_message(ui, "BUTTON1_DOUBLE_CLICKED");
-      }
+  if(getmouse(&event) == OK)
+  {	/* When the user clicks left mouse button */
+    if(event.bstate & BUTTON1_PRESSED)
+      display_local_message(ui, "BUTTON1_PRESSED");
+  }
+  else if (event.bstate & BUTTON1_DOUBLE_CLICKED)
+  {
+    display_local_message(ui, "BUTTON1_DOUBLE_CLICKED");
   }
 }
