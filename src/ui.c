@@ -116,7 +116,7 @@ void destroy_ui(ui_t *ui) {
   endwin();
   free(ui);
 }
-char *get_message(ui_t *ui) {
+char *get_user_input(ui_t *ui) {
   char *msg = malloc(1024);
   wmove(ui->prompt, 1, 4);
   wgetstr(ui->prompt, msg);

@@ -183,7 +183,7 @@ void* gui_loop(void*args) {
 
   while(TRUE) {
 
-    char *message = get_message(ui);
+    char *message = get_user_input(ui);
 
     if(strcmp(message,":help") == 0) {
       display_system_message(ui,
@@ -192,7 +192,7 @@ void* gui_loop(void*args) {
     }
     else if(strcmp(message,":connect") == 0) {
       display_system_message(ui,"Name of user to connect to:\n");
-      message = get_message(ui);
+      message = get_user_input(ui);
 
       peer *p = app_peer_from_input(message);
       if(!p) {
