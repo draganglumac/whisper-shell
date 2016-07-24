@@ -28,6 +28,8 @@
 #include <jnxc_headers/jnx_thread.h>
 #include <time.h>
 #include "ui.h"
+#include "ui_display_log.h"
+
 static char *baddr = NULL;
 static connection_controller *connectionc;
 static session_controller *sc;
@@ -159,6 +161,7 @@ void *run_log_thread(void *args) {
   interval.tv_sec = 0;
   interval.tv_nsec = 10L * 1000 * 1000;
   ssize_t bytesread = 0, last_read_pos = 0, end_pos = 0, offset = 0;
+  char *leftover = NULL;
   while(log_thread_run) {
     end_pos = lseek(fd,0L,SEEK_END);
     offset = end_pos - last_read_pos;
@@ -168,7 +171,7 @@ void *run_log_thread(void *args) {
       bytesread = read(fd, (void*)message, offset);
       message[bytesread+1] = '\0';
       last_read_pos += bytesread;
-      display_system_message(ui, message);
+      leftover = ui_display_log_chunk(ui, message, leftover);
       free(message);
     }
     nanosleep(&interval, NULL);
@@ -187,7 +190,7 @@ void* gui_loop(void*args) {
           "COMMANDS\n:quit to quit\n:peers to list peers \
           \n:connect allows you to select a user to connect to\n");
     }
-    if(strcmp(message,":connect") == 0) {
+    else if(strcmp(message,":connect") == 0) {
       display_system_message(ui,"Name of user to connect to:\n");
       message = get_message(ui);
 
@@ -195,7 +198,8 @@ void* gui_loop(void*args) {
       if(!p) {
         display_system_message(ui,"Peer not found\n");
         continue;
-      }else {
+      }
+      else {
         display_system_message(ui,"Connecting...\n");
         //----------------------------------------------------------------------
         session *ses = session_controller_session_create(sc,p);
@@ -208,13 +212,22 @@ void* gui_loop(void*args) {
         free(session_id);
       }
     }
-    if(strcmp(message,":peers") == 0) {
+    else if(strcmp(message,":peers") == 0) {
       show_active_peers(store);
     }
-    if(strcmp(message,":sessions") == 0) {
+    else if(strcmp(message,":sessions") == 0) {
       show_sessions(); 
     }
-    if(strcmp(message,":quit") == 0) {
+    else if(strcmp(message, ":log") == 0) {
+      show_log(ui);
+    }
+    else if(strcmp(message, ":chat") == 0) {
+      show_chat(ui);
+    }
+    else if(strcmp(message, ":split") == 0) {
+      show_split(ui);
+    }
+    else if(strcmp(message,":quit") == 0) {
       log_thread_run = 0;
       display_system_message(ui,"STOPPING WHISPER_CORE\n"); 
 

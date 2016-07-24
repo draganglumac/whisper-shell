@@ -8,3 +8,5 @@ CMakeCache.txt
 *.cmake
 Makefile
 whisper-shell
+logtest.conf
+tags
