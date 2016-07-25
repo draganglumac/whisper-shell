@@ -19,7 +19,7 @@
 #include <string.h>
 #include "ui_display_log.h"
 
-#define MAX_BUF 1024
+#define MAX_BUF 5012
 
 char *ui_display_log_chunk(ui_t *ui, char *chunk, char *leftover) {
   char *buffer = calloc(MAX_BUF, sizeof(char));

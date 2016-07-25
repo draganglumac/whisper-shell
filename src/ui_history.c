@@ -52,10 +52,11 @@ void insert_at_end(ui_history *h, hist_item *hitem) {
   h->history[h->end] = hitem;
 }
 void ui_history_add(ui_history *h, char *msg, MSG_TYPE type) {
+  int msg_len = strlen(msg);
+  if(!msg_len) return;
   hist_item *item = malloc(sizeof(hist_item));
   item->type = type;
   // make a copy of the message
-  int msg_len = strlen(msg);
   item->message = calloc(msg_len+1, sizeof(char));
   strncpy(item->message, msg, msg_len);
 
