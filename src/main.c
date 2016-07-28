@@ -33,6 +33,7 @@
 static char *baddr = NULL;
 static connection_controller *connectionc;
 static session_controller *sc;
+static session *ses = NULL;
 static discovery_service *ds = NULL;
 static char *interface = NULL;
 static peerstore *store = NULL;
@@ -142,7 +143,7 @@ void on_new_session_message(const session *s,
     const connection_request *c, const jnx_char *message,
     jnx_size message_len) {
 
-  display_system_message(ui,(char*)message);
+  display_remote_message(ui,(char*)message);
 }
 
 FILE *JNXLOG_OUTPUT_FP = NULL;
@@ -202,7 +203,9 @@ void* gui_loop(void*args) {
       else {
         display_system_message(ui,"Connecting...\n");
         //----------------------------------------------------------------------
-        session *ses = session_controller_session_create(sc,p);
+        
+        //TODO: MAKE THIS NOT THE ONLY SESSION 
+        ses = session_controller_session_create(sc,p);
         //----------------------------------------------------------------------
         jnx_char *session_id;
         jnx_guid_to_string(&(*ses).id,&session_id);
@@ -223,6 +226,21 @@ void* gui_loop(void*args) {
     }
     else if(strcmp(message, ":chat") == 0) {
       show_chat(ui);
+
+      int b = 0;
+      
+      do {
+        message = get_message(ui);
+        if(strcmp(message,":close") == 0) {
+          b = 1;
+          break;
+        }
+        JNXCHECK(ses);
+        JNXCHECK(sc);
+        JNXCHECK(message);
+        session_controller_session_send_message(sc,ses,message, strlen(message));
+
+      }while (b == 0);
     }
     else if(strcmp(message, ":split") == 0) {
       show_split(ui);
