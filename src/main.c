@@ -143,7 +143,9 @@ void on_new_session_message(const session *s,
     const connection_request *c, const jnx_char *message,
     jnx_size message_len) {
 
-  display_remote_message(ui,(char*)message);
+  jnx_char *copy = stdup(message);
+  display_remote_message(ui,copy);
+  free(copy);
 }
 
 FILE *JNXLOG_OUTPUT_FP = NULL;
