@@ -106,7 +106,7 @@ ui_t *create_ui() {
 
   /* Get all the mouse events */
   mousemask(ALL_MOUSE_EVENTS, NULL);
-  int interval = mouseinterval(1);
+  mouseinterval(128);
   keypad(stdscr, TRUE);
 
   render_ui(ui);
@@ -132,54 +132,50 @@ void destroy_ui(ui_t *ui) {
 }
 void process_mouse_events(ui_t *ui) {
   MEVENT event;
-
-  keypad(ui->screen, TRUE);
-  keypad(ui->log, TRUE);
-  keypad(ui->prompt, TRUE);
-
-  if(getmouse(&event) == OK)
-  {	/* When the user clicks left mouse button */
-    if(event.bstate & BUTTON1_PRESSED)
-      display_local_message(ui, "BUTTON1_PRESSED");
-  }
-  else if (event.bstate & BUTTON1_DOUBLE_CLICKED)
-  {
-    display_local_message(ui, "BUTTON1_DOUBLE_CLICKED");
+  if(getmouse(&event) == OK) {
+    if (event.bstate & BUTTON1_DOUBLE_CLICKED) {
+      display_local_message(ui, "BUTTON1_DOUBLE_CLICKED");
+    }
+    else if(event.bstate & BUTTON1_CLICKED) {
+      display_local_message(ui, "BUTTON1_CLICKED");
+    }
   }
 }
 char *get_user_input(ui_t *ui) {
   char *msg = malloc(MAX_BUFF);
-  int msg_len = 0;
+  int msg_len = 0, c, px, py;
+
   wmove(ui->prompt, 1, 4);
   wrefresh(ui->prompt);
-  int c, px, py;
-  while (c = getch()) {
-    if (c == KEY_MOUSE) {
-      display_local_message(ui, "Look ma, mouse event!");
-      //      process_mouse_events(ui);
-    }
-    else if (c == KEY_BACKSPACE) {
-      if (msg_len > 0) {
-        getyx(ui->prompt, py, px);
-        if (px >= 4) {
-          mvwdelch(ui->prompt, py, px-1);
-          msg_len--;
-          wrefresh(ui->prompt);
+  while (c = getch()) 
+    switch (c) {
+      case KEY_MOUSE:
+        process_mouse_events(ui);
+        break;
+
+      case KEY_BACKSPACE:
+        if (msg_len > 0) {
+          getyx(ui->prompt, py, px);
+          if (px >= 4) {
+            mvwdelch(ui->prompt, py, px-1);
+            msg_len--;
+            wrefresh(ui->prompt);
+          }
         }
-      }
+        break;
+
+      case '\n':
+        mvwinnstr(ui->prompt, 1, 4, msg, msg_len);
+        show_prompt(ui);
+        return msg;  
+
+      default:
+        getyx(ui->prompt, py, px);
+        mvwaddch(ui->prompt, py, px, c);
+        msg_len++;
+        wrefresh(ui->prompt);
+        break;
     }
-    else if (c == '\n') {
-      mvwinnstr(ui->prompt, 1, 4, msg, msg_len);
-      show_prompt(ui);
-      return msg;  
-    }
-    else {
-      getyx(ui->prompt, py, px);
-      mvwaddch(ui->prompt, py, px, c);
-      msg_len++;
-      wrefresh(ui->prompt);
-    }
-  }
 }
 static void update_next_line(ui_t *ui) {
   int lines, cols;
