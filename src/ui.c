@@ -23,6 +23,8 @@
 #include "ui.h"
 #include "ui_history.h"
 
+#define MAX_BUFF 1024
+
 #define COL_LOGO   1
 #define COL_LOCAL  2
 #define COL_REMOTE 3
@@ -124,27 +126,57 @@ void destroy_ui(ui_t *ui) {
   delwin(ui->alert);
   // prompt window
   delwin(ui->prompt);
-  
+
   endwin();
   free(ui);
 }
+void process_mouse_events(ui_t *ui) {
+  MEVENT event;
+
+  keypad(ui->screen, TRUE);
+  keypad(ui->log, TRUE);
+  keypad(ui->prompt, TRUE);
+
+  if(getmouse(&event) == OK)
+  {	/* When the user clicks left mouse button */
+    if(event.bstate & BUTTON1_PRESSED)
+      display_local_message(ui, "BUTTON1_PRESSED");
+  }
+  else if (event.bstate & BUTTON1_DOUBLE_CLICKED)
+  {
+    display_local_message(ui, "BUTTON1_DOUBLE_CLICKED");
+  }
+}
 char *get_user_input(ui_t *ui) {
-  char *msg = calloc(1024, sizeof(char));
+  char *msg = malloc(MAX_BUFF);
+  int msg_len = 0;
   wmove(ui->prompt, 1, 4);
   wrefresh(ui->prompt);
   int c, px, py;
   while (c = getch()) {
     if (c == KEY_MOUSE) {
-      process_mouse_events(ui);
+      display_local_message(ui, "Look ma, mouse event!");
+      //      process_mouse_events(ui);
+    }
+    else if (c == KEY_BACKSPACE) {
+      if (msg_len > 0) {
+        getyx(ui->prompt, py, px);
+        if (px >= 4) {
+          mvwdelch(ui->prompt, py, px-1);
+          msg_len--;
+          wrefresh(ui->prompt);
+        }
+      }
     }
     else if (c == '\n') {
-      mvwinstr(ui->prompt, 1, 4, msg);
+      mvwinnstr(ui->prompt, 1, 4, msg, msg_len);
       show_prompt(ui);
       return msg;  
     }
     else {
       getyx(ui->prompt, py, px);
       mvwaddch(ui->prompt, py, px, c);
+      msg_len++;
       wrefresh(ui->prompt);
     }
   }
@@ -300,22 +332,4 @@ void show_alert(ui_t *ui, char *message) {
 }
 void hide_alert(ui_t *ui) {
   hide_panel(ALERT);
-}
-void process_mouse_events(ui_t *ui) {
-  // ToDo - Handle all the mouse events here
-  MEVENT event;
-
-  keypad(ui->screen, TRUE);
-  keypad(ui->log, FALSE);
-  keypad(ui->prompt, FALSE);
-
-  if(getmouse(&event) == OK)
-  {	/* When the user clicks left mouse button */
-    if(event.bstate & BUTTON1_PRESSED)
-      display_local_message(ui, "BUTTON1_PRESSED");
-  }
-  else if (event.bstate & BUTTON1_DOUBLE_CLICKED)
-  {
-    display_local_message(ui, "BUTTON1_DOUBLE_CLICKED");
-  }
 }
