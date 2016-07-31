@@ -81,11 +81,11 @@ static void display_tabs(int active) {
   }
   else if (ACTIVE_LOG == active) {
     attron(A_REVERSE|A_BOLD);
-    mvprintw(0, COLS-5, " Log ");
+    mvprintw(0, log_tab, " Log ");
     attroff(A_REVERSE|A_BOLD);
 
     attron(A_BOLD);
-    mvprintw(0, COLS-11, " Chat ");
+    mvprintw(0, chat_tab, " Chat ");
     attroff(A_BOLD);
   }
 }
