@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "ui.h"
 #include "ui_history.h"
@@ -39,6 +40,11 @@ static char *pb = system_buffer;
 
 static ui_history *chat_history;
 static ui_history *log_history;
+
+#define ACTIVE_CHAT 0
+#define ACTIVE_LOG  1
+static int chat_tab;
+static int log_tab;
 
 static void init_colours() {
   if (has_colors() == FALSE) {
@@ -62,10 +68,38 @@ static void display_logo() {
   attron(COLOR_PAIR(COL_LOGO) | A_BOLD);
   printw("%s", " Whisper Shell ");
   attroff(COLOR_PAIR(COL_LOGO) | A_BOLD);
+}
+static void display_tabs(int active) {
+  if (ACTIVE_CHAT == active) {
+    attron(A_REVERSE|A_BOLD);
+    mvprintw(0, chat_tab, " Chat ");
+    attroff(A_REVERSE|A_BOLD);
+
+    attron(A_BOLD);
+    mvprintw(0, log_tab, " Log ");
+    attroff(A_BOLD);
+  }
+  else if (ACTIVE_LOG == active) {
+    attron(A_REVERSE|A_BOLD);
+    mvprintw(0, COLS-5, " Log ");
+    attroff(A_REVERSE|A_BOLD);
+
+    attron(A_BOLD);
+    mvprintw(0, COLS-11, " Chat ");
+    attroff(A_BOLD);
+  }
+}
+static void render_tab_bar(int active) {
+  move(0,0);
+  deleteln();
+  display_logo();
+  display_tabs(active);
   refresh();
 }
 static void render_ui(ui_t *ui) {
-  display_logo();
+  chat_tab = COLS-12;
+  log_tab = COLS-6;
+  render_tab_bar(ACTIVE_CHAT);
 
   ui->screen = newwin(LINES - 6, COLS - 1, 1, 1);
   scrollok(ui->screen, TRUE);
@@ -134,7 +168,12 @@ void process_mouse_events(ui_t *ui) {
   MEVENT event;
   if(getmouse(&event) == OK) {
     if (event.bstate & BUTTON1_PRESSED) {
-      display_local_message(ui, "BUTTON1_PRESSED");
+      if (event.y == 0) {
+        if (event.x >= chat_tab && event.x < chat_tab+6) // clicked chat tab
+          show_chat(ui);
+        else if (event.x >= log_tab && event.x < log_tab+5) // clicked log tab
+          show_log(ui);
+      }
     }
   }
 }
@@ -272,6 +311,10 @@ void reset_borders(ui_t *ui) {
   wborder(ui->log, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
 }
 void show_chat(ui_t *ui) {
+  chat_tab = COLS-12;
+  log_tab = COLS-6;
+  render_tab_bar(ACTIVE_CHAT);
+
   hide_panel(ALERT);
   reset_borders(ui);
   wclear(ui->screen);
@@ -282,8 +325,13 @@ void show_chat(ui_t *ui) {
   top_panel(CHAT);
   update_panels();
   doupdate();
+  wrefresh(ui->prompt);
 }
 void show_log(ui_t *ui) {
+  chat_tab = COLS-12;
+  log_tab = COLS-6;
+  render_tab_bar(ACTIVE_LOG);
+
   hide_panel(ALERT);
   reset_borders(ui);
   wclear(ui->log);
@@ -295,8 +343,13 @@ void show_log(ui_t *ui) {
   top_panel(LOG);
   update_panels();
   doupdate();
+  wrefresh(ui->prompt);
 }
 void show_split(ui_t *ui) {
+  chat_tab = (COLS/2)-7;
+  log_tab = COLS-6;
+  render_tab_bar(ACTIVE_CHAT);
+
   hide_panel(ALERT);
   reset_borders(ui);
   wresize(ui->screen, LINES - 6, COLS/2 - 1);
@@ -308,6 +361,7 @@ void show_split(ui_t *ui) {
   show_panel(LOG);
   update_panels();
   doupdate();
+  wrefresh(ui->prompt);
 }
 void show_alert(ui_t *ui, char *message) {
   int cols = COLS;

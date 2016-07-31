@@ -31,11 +31,11 @@ typedef struct {
   int next_line;
   int next_log_line;
 } ui_t;
+
 typedef struct {
 	ui_t *ui;
 	char *msg;
 } context_t;
-
 
 ui_t *create_ui();
 void destroy_ui(ui_t *ui);
