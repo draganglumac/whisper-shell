@@ -106,7 +106,7 @@ ui_t *create_ui() {
 
   /* Get all the mouse events */
   mousemask(ALL_MOUSE_EVENTS, NULL);
-  mouseinterval(128);
+  mouseinterval(1);
   keypad(stdscr, TRUE);
 
   render_ui(ui);
@@ -133,11 +133,8 @@ void destroy_ui(ui_t *ui) {
 void process_mouse_events(ui_t *ui) {
   MEVENT event;
   if(getmouse(&event) == OK) {
-    if (event.bstate & BUTTON1_DOUBLE_CLICKED) {
-      display_local_message(ui, "BUTTON1_DOUBLE_CLICKED");
-    }
-    else if(event.bstate & BUTTON1_CLICKED) {
-      display_local_message(ui, "BUTTON1_CLICKED");
+    if (event.bstate & BUTTON1_PRESSED) {
+      display_local_message(ui, "BUTTON1_PRESSED");
     }
   }
 }
