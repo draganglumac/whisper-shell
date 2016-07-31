@@ -218,12 +218,6 @@ void* gui_loop(void*args) {
     else if(strcmp(message,":sessions") == 0) {
       show_sessions(); 
     }
-    else if(strcmp(message, ":log") == 0) {
-      show_log(ui);
-    }
-    else if(strcmp(message, ":chat") == 0) {
-      show_chat(ui);
-    }
     else if(strcmp(message, ":split") == 0) {
       show_split(ui);
     }

@@ -58,10 +58,13 @@ static void init_colours() {
   init_pair(COL_REMOTE, COLOR_GREEN, COLOR_BLACK);
   init_pair(COL_SYS, COLOR_BLUE, COLOR_BLACK);
 }
-static void show_prompt(ui_t *ui) {
+static void show_prompt(ui_t *ui, char *msg) {
   wmove(ui->prompt, 1, 1);
   wclear(ui->prompt);
-  mvwprintw(ui->prompt, 1, 1, "$> ");
+  if (msg != NULL)
+    mvwprintw(ui->prompt, 1, 1, "$> %s", msg);
+  else
+    mvwprintw(ui->prompt, 1, 1, "$> ");
   wrefresh(ui->prompt);
 }
 static void display_logo() {
@@ -129,7 +132,7 @@ static void render_ui(ui_t *ui) {
   doupdate();
 
   ui->prompt = newwin(4, COLS - 1, LINES - 5, 1);
-  show_prompt(ui);
+  show_prompt(ui, NULL);
 }
 ui_t *create_ui() {
   ui_t *ui = malloc(sizeof(ui_t));
@@ -186,7 +189,9 @@ char *get_user_input(ui_t *ui) {
   while (c = getch()) 
     switch (c) {
       case KEY_MOUSE:
+        mvwinnstr(ui->prompt, 1, 4, msg, msg_len);
         process_mouse_events(ui);
+        show_prompt(ui, msg);
         break;
 
       case KEY_BACKSPACE:
@@ -202,7 +207,7 @@ char *get_user_input(ui_t *ui) {
 
       case '\n':
         mvwinnstr(ui->prompt, 1, 4, msg, msg_len);
-        show_prompt(ui);
+        show_prompt(ui, NULL);
         return msg;  
 
       default:
@@ -325,7 +330,6 @@ void show_chat(ui_t *ui) {
   top_panel(CHAT);
   update_panels();
   doupdate();
-  wrefresh(ui->prompt);
 }
 void show_log(ui_t *ui) {
   chat_tab = COLS-12;
@@ -343,7 +347,6 @@ void show_log(ui_t *ui) {
   top_panel(LOG);
   update_panels();
   doupdate();
-  wrefresh(ui->prompt);
 }
 void show_split(ui_t *ui) {
   chat_tab = (COLS/2)-7;
@@ -361,7 +364,7 @@ void show_split(ui_t *ui) {
   show_panel(LOG);
   update_panels();
   doupdate();
-  wrefresh(ui->prompt);
+  show_prompt(ui, NULL);
 }
 void show_alert(ui_t *ui, char *message) {
   int cols = COLS;
