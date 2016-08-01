@@ -22,9 +22,12 @@ ExternalProject_Add(whisper-core-project
 add_library(whisper-core SHARED IMPORTED)
 add_library(whisper-cores STATIC IMPORTED)
 
-set_property(TARGET whisper-core PROPERTY IMPORTED_LOCATION ${whisper-core_INSTALL_DIR}/lib/libwhisper-core.so)
+if(APPLE)
+  set_property(TARGET whisper-core PROPERTY IMPORTED_LOCATION ${whisper-core_INSTALL_DIR}/lib/libwhisper-core.dylib)
+else()
+  set_property(TARGET whisper-core PROPERTY IMPORTED_LOCATION ${whisper-core_INSTALL_DIR}/lib/libwhisper-core.so)
+endif()
 set_property(TARGET whisper-cores PROPERTY IMPORTED_LOCATION ${whisper-core_INSTALL_DIR}/lib/libwhisper-core-static.a)
-
 
 add_subdirectory(src)
 include_directories(${PROJECT_INC_DIR}/src)

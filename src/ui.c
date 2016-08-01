@@ -19,9 +19,12 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "ui.h"
 #include "ui_history.h"
+
+#define MAX_BUFF 1024
 
 #define COL_LOGO   1
 #define COL_LOCAL  2
@@ -35,10 +38,15 @@
 static char system_buffer[1024];
 static char *pb = system_buffer;
 
-ui_history *chat_history;
-ui_history *log_history;
+static ui_history *chat_history;
+static ui_history *log_history;
 
-void init_colours() {
+#define ACTIVE_CHAT 0
+#define ACTIVE_LOG  1
+static int chat_tab;
+static int log_tab;
+
+static void init_colours() {
   if (has_colors() == FALSE) {
     endwin();
     printf("Your terminal does not support colours.\n");
@@ -50,24 +58,51 @@ void init_colours() {
   init_pair(COL_REMOTE, COLOR_GREEN, COLOR_BLACK);
   init_pair(COL_SYS, COLOR_BLUE, COLOR_BLACK);
 }
-void show_prompt(ui_t *ui) {
+static void show_prompt(ui_t *ui, char *msg) {
   wmove(ui->prompt, 1, 1);
   wclear(ui->prompt);
-  mvwprintw(ui->prompt, 1, 1, "$> ");
+  if (msg != NULL)
+    mvwprintw(ui->prompt, 1, 1, "$> %s", msg);
+  else
+    mvwprintw(ui->prompt, 1, 1, "$> ");
   wrefresh(ui->prompt);
 }
-void display_logo() {
+static void display_logo() {
   attron(COLOR_PAIR(COL_LOGO) | A_BOLD);
   printw("%s", " Whisper Shell ");
   attroff(COLOR_PAIR(COL_LOGO) | A_BOLD);
+}
+static void display_tabs(int active) {
+  if (ACTIVE_CHAT == active) {
+    attron(A_REVERSE|A_BOLD);
+    mvprintw(0, chat_tab, " Chat ");
+    attroff(A_REVERSE|A_BOLD);
+
+    attron(A_BOLD);
+    mvprintw(0, log_tab, " Log ");
+    attroff(A_BOLD);
+  }
+  else if (ACTIVE_LOG == active) {
+    attron(A_REVERSE|A_BOLD);
+    mvprintw(0, log_tab, " Log ");
+    attroff(A_REVERSE|A_BOLD);
+
+    attron(A_BOLD);
+    mvprintw(0, chat_tab, " Chat ");
+    attroff(A_BOLD);
+  }
+}
+static void render_tab_bar(int active) {
+  move(0,0);
+  deleteln();
+  display_logo();
+  display_tabs(active);
   refresh();
 }
-ui_t *create_ui() {
-  ui_t *ui = malloc(sizeof(ui_t));
-
-  initscr();
-  init_colours();
-  display_logo();
+static void render_ui(ui_t *ui) {
+  chat_tab = COLS-12;
+  log_tab = COLS-6;
+  render_tab_bar(ACTIVE_CHAT);
 
   ui->screen = newwin(LINES - 6, COLS - 1, 1, 1);
   scrollok(ui->screen, TRUE);
@@ -97,33 +132,93 @@ ui_t *create_ui() {
   doupdate();
 
   ui->prompt = newwin(4, COLS - 1, LINES - 5, 1);
-  show_prompt(ui);
+  show_prompt(ui, NULL);
+}
+ui_t *create_ui() {
+  ui_t *ui = malloc(sizeof(ui_t));
 
+  initscr();
+  init_colours();
+  noecho();
+
+  /* Get all the mouse events */
+  mousemask(ALL_MOUSE_EVENTS, NULL);
+  mouseinterval(1);
+  keypad(stdscr, TRUE);
+
+  render_ui(ui);
   return ui;
 }
 void destroy_ui(ui_t *ui) {
+  // chat panel and window
   del_panel(CHAT);
   delwin(ui->screen);
   ui_history_destroy(&chat_history);
-
+  // log panel and window
   del_panel(LOG);
-  delwin(ui->prompt);
+  delwin(ui->log);
   ui_history_destroy(&log_history);
-
+  // alert panel and window
   del_panel(ALERT);
   delwin(ui->alert);
+  // prompt window
+  delwin(ui->prompt);
 
   endwin();
   free(ui);
 }
-char *get_message(ui_t *ui) {
-  char *msg = malloc(1024);
-  wmove(ui->prompt, 1, 4);
-  wgetstr(ui->prompt, msg);
-  show_prompt(ui);
-  return msg;
+void process_mouse_events(ui_t *ui) {
+  MEVENT event;
+  if(getmouse(&event) == OK) {
+    if (event.bstate & BUTTON1_PRESSED) {
+      if (event.y == 0) {
+        if (event.x >= chat_tab && event.x < chat_tab+6) // clicked chat tab
+          show_chat(ui);
+        else if (event.x >= log_tab && event.x < log_tab+5) // clicked log tab
+          show_log(ui);
+      }
+    }
+  }
 }
-void update_next_line(ui_t *ui) {
+char *get_user_input(ui_t *ui) {
+  char *msg = malloc(MAX_BUFF);
+  int msg_len = 0, c, px, py;
+
+  wmove(ui->prompt, 1, 4);
+  wrefresh(ui->prompt);
+  while (c = getch()) 
+    switch (c) {
+      case KEY_MOUSE:
+        mvwinnstr(ui->prompt, 1, 4, msg, msg_len);
+        process_mouse_events(ui);
+        show_prompt(ui, msg);
+        break;
+
+      case KEY_BACKSPACE:
+        if (msg_len > 0) {
+          getyx(ui->prompt, py, px);
+          if (px >= 4) {
+            mvwdelch(ui->prompt, py, px-1);
+            msg_len--;
+            wrefresh(ui->prompt);
+          }
+        }
+        break;
+
+      case '\n':
+        mvwinnstr(ui->prompt, 1, 4, msg, msg_len);
+        show_prompt(ui, NULL);
+        return msg;  
+
+      default:
+        getyx(ui->prompt, py, px);
+        mvwaddch(ui->prompt, py, px, c);
+        msg_len++;
+        wrefresh(ui->prompt);
+        break;
+    }
+}
+static void update_next_line(ui_t *ui) {
   int lines, cols;
   getmaxyx(ui->screen, lines, cols);
   if (ui->next_line >= --lines) {
@@ -135,7 +230,7 @@ void update_next_line(ui_t *ui) {
     ui->next_line = lines;
   }
 }
-void update_next_log_line(ui_t *ui) {
+static void update_next_log_line(ui_t *ui) {
   int lines, cols;
   getmaxyx(ui->log, lines, cols);
   if (ui->next_log_line >= --lines) {
@@ -147,7 +242,7 @@ void update_next_log_line(ui_t *ui) {
     ui->next_log_line = lines;
   }
 }
-void display_message(ui_t *ui, char *msg, int col_flag) {
+static void display_message(ui_t *ui, char *msg, int col_flag) {
   int row, col;
   getyx(ui->prompt, row, col);
   wattron(ui->screen, COLOR_PAIR(col_flag));
@@ -160,7 +255,7 @@ void display_message(ui_t *ui, char *msg, int col_flag) {
   wmove(ui->prompt, row, col);
   wrefresh(ui->prompt);
 }
-void display_status_message(ui_t *ui, char *msg, int col_flag) {
+static void display_status_message(ui_t *ui, char *msg, int col_flag) {
   int row, col;
   getyx(ui->prompt, row, col);
   wattron(ui->log, COLOR_PAIR(col_flag));
@@ -221,6 +316,10 @@ void reset_borders(ui_t *ui) {
   wborder(ui->log, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
 }
 void show_chat(ui_t *ui) {
+  chat_tab = COLS-12;
+  log_tab = COLS-6;
+  render_tab_bar(ACTIVE_CHAT);
+
   hide_panel(ALERT);
   reset_borders(ui);
   wclear(ui->screen);
@@ -233,6 +332,10 @@ void show_chat(ui_t *ui) {
   doupdate();
 }
 void show_log(ui_t *ui) {
+  chat_tab = COLS-12;
+  log_tab = COLS-6;
+  render_tab_bar(ACTIVE_LOG);
+
   hide_panel(ALERT);
   reset_borders(ui);
   wclear(ui->log);
@@ -246,6 +349,10 @@ void show_log(ui_t *ui) {
   doupdate();
 }
 void show_split(ui_t *ui) {
+  chat_tab = (COLS/2)-7;
+  log_tab = COLS-6;
+  render_tab_bar(ACTIVE_CHAT);
+
   hide_panel(ALERT);
   reset_borders(ui);
   wresize(ui->screen, LINES - 6, COLS/2 - 1);
@@ -257,6 +364,7 @@ void show_split(ui_t *ui) {
   show_panel(LOG);
   update_panels();
   doupdate();
+  show_prompt(ui, NULL);
 }
 void show_alert(ui_t *ui, char *message) {
   int cols = COLS;
@@ -274,32 +382,4 @@ void show_alert(ui_t *ui, char *message) {
 }
 void hide_alert(ui_t *ui) {
   hide_panel(ALERT);
-}
-void process_mouse_events(ui_t *ui) {
-  // ToDo - Handle all the mouse events here
-  int c;
-  MEVENT event;
-
-  /* Get all the mouse events */
-  mousemask(ALL_MOUSE_EVENTS, NULL);
-  int interval = mouseinterval(1);
-  keypad(stdscr, FALSE);
-  keypad(ui->screen, TRUE);
-
-  c = wgetch(ui->screen);
-  switch(c)
-  {	
-    case KEY_MOUSE:
-      if(getmouse(&event) == OK)
-      {	/* When the user clicks left mouse button */
-        if(event.bstate & BUTTON1_PRESSED)
-          display_local_message(ui, "BUTTON1_PRESSED");
-      }
-      else if (event.bstate & BUTTON1_DOUBLE_CLICKED)
-      {
-        display_local_message(ui, "BUTTON1_DOUBLE_CLICKED");
-      }
-  }
-  keypad(ui->screen, FALSE);
-  keypad(stdscr, TRUE);
 }

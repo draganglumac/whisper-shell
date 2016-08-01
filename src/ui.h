@@ -31,22 +31,21 @@ typedef struct {
   int next_line;
   int next_log_line;
 } ui_t;
+
 typedef struct {
 	ui_t *ui;
 	char *msg;
 } context_t;
 
-
 ui_t *create_ui();
 void destroy_ui(ui_t *ui);
-char *get_message(ui_t *ui);
+char *get_user_input(ui_t *ui);
 void display_local_message(ui_t *ui, char *msg);
 void display_remote_message(ui_t *ui, char *msg);
 void display_system_message(ui_t *ui, char *msg);
 void show_chat(ui_t *ui);
 void show_log(ui_t *ui);
 void show_split(ui_t *ui);
-void process_mouse_events(ui_t *ui);
 void show_alert(ui_t *ui, char *message);
 void hide_alert(ui_t *ui); 
 
