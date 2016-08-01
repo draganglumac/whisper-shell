@@ -166,13 +166,13 @@ void *run_log_thread(void *args) {
     end_pos = lseek(fd,0L,SEEK_END);
     offset = end_pos - last_read_pos;
     if (offset > 0) {
-      char *message = malloc(offset + 1);
+      char message[4096];
       lseek(fd, last_read_pos, SEEK_SET);
-      bytesread = read(fd, (void*)message, offset);
+      bytesread = read(fd, (void*)&message, offset);
       message[bytesread+1] = '\0';
       last_read_pos += bytesread;
-      leftover = ui_display_log_chunk(ui, message, leftover);
-      free(message);
+      leftover = ui_display_log_chunk(ui, (char*)&message, leftover);
+
     }
     nanosleep(&interval, NULL);
   }
