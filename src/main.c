@@ -143,6 +143,8 @@ void on_new_session_message(const session *s,
     jnx_size message_len) {
 
   display_system_message(ui,(char*)message);
+  JNXLOG(LDEBUG,"Message receieved at userlevel on_new_session_message: %s",
+      message);
 }
 
 FILE *JNXLOG_OUTPUT_FP = NULL;
