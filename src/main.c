@@ -145,6 +145,7 @@ void on_new_session_message(const session *s,
 
   jnx_char *copy = strdup(message);
   display_remote_message(ui,copy);
+  JNXLOG(LDEBUG,copy);
   free(copy);
 }
 
@@ -169,9 +170,15 @@ void *run_log_thread(void *args) {
     end_pos = lseek(fd,0L,SEEK_END);
     offset = end_pos - last_read_pos;
     if (offset > 0) {
-      char message[4096];
+      char message[1024 * 1024] = {};
       lseek(fd, last_read_pos, SEEK_SET);
       bytesread = read(fd, (void*)&message, offset);
+      if(!bytesread) {
+        return NULL;
+      }
+      if(!message) {
+        return NULL;
+      }
       message[bytesread+1] = '\0';
       last_read_pos += bytesread;
       leftover = ui_display_log_chunk(ui, (char*)&message, leftover);
