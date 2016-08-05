@@ -274,7 +274,7 @@ void display_local_message(ui_t *ui, char *msg) {
 }
 void display_remote_message(ui_t *ui, char *msg) {
   ui_history_add(chat_history, msg, MSG_REMOTE);
-  display_message(ui, msg + 2, COL_REMOTE);
+  display_message(ui, msg, COL_REMOTE);
 }
 void display_system_message(ui_t *ui, char *msg) {
   ui_history_add(log_history, msg, MSG_SYSTEM);
