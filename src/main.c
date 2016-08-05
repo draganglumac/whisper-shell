@@ -231,7 +231,7 @@ void* gui_loop(void*args) {
       int b = 0;
       
       do {
-        message = get_message(ui);
+        message = get_user_input(ui);
         if(strcmp(message,":close") == 0) {
           b = 1;
           break;
