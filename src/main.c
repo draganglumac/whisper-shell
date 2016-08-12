@@ -33,6 +33,7 @@
 static char *baddr = NULL;
 static connection_controller *connectionc;
 static session_controller *sc;
+static session *ses = NULL;
 static discovery_service *ds = NULL;
 static char *interface = NULL;
 static peerstore *store = NULL;
@@ -142,7 +143,10 @@ void on_new_session_message(const session *s,
     const connection_request *c, const jnx_char *message,
     jnx_size message_len) {
 
-  display_system_message(ui,(char*)message);
+  jnx_char *copy = strdup(message);
+  display_remote_message(ui,copy);
+  JNXLOG(LDEBUG,copy);
+  free(copy);
 }
 
 FILE *JNXLOG_OUTPUT_FP = NULL;
@@ -166,9 +170,15 @@ void *run_log_thread(void *args) {
     end_pos = lseek(fd,0L,SEEK_END);
     offset = end_pos - last_read_pos;
     if (offset > 0) {
-      char message[4096];
+      char message[1024 * 1024] = {};
       lseek(fd, last_read_pos, SEEK_SET);
       bytesread = read(fd, (void*)&message, offset);
+      if(!bytesread) {
+        return NULL;
+      }
+      if(!message) {
+        return NULL;
+      }
       message[bytesread+1] = '\0';
       last_read_pos += bytesread;
       leftover = ui_display_log_chunk(ui, (char*)&message, leftover);
@@ -202,7 +212,9 @@ void* gui_loop(void*args) {
       else {
         display_system_message(ui,"Connecting...\n");
         //----------------------------------------------------------------------
-        session *ses = session_controller_session_create(sc,p);
+        
+        //TODO: MAKE THIS NOT THE ONLY SESSION 
+        ses = session_controller_session_create(sc,p);
         //----------------------------------------------------------------------
         jnx_char *session_id;
         jnx_guid_to_string(&(*ses).id,&session_id);
@@ -217,6 +229,26 @@ void* gui_loop(void*args) {
     }
     else if(strcmp(message,":sessions") == 0) {
       show_sessions(); 
+    }
+    else if(strcmp(message, ":log") == 0) {
+      show_log(ui);
+    }
+    else if(strcmp(message, ":chat") == 0) {
+      show_chat(ui);
+      int b = 0;
+      
+      do {
+        message = get_user_input(ui);
+        if(strcmp(message,":close") == 0) {
+          b = 1;
+          break;
+        }
+        JNXCHECK(ses);
+        JNXCHECK(sc);
+        JNXCHECK(message);
+        session_controller_session_send_message(sc,ses,message, strlen(message));
+
+      }while (b == 0);
     }
     else if(strcmp(message, ":split") == 0) {
       show_split(ui);
